@@ -1,0 +1,65 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:1706.09911 (cs)
+[Submitted on 29 Jun 2017]
+Grasp Pose Detection in Point Clouds
+Andreas ten Pas, Marcus Gualtieri, Kate Saenko, Robert Platt
+View PDF
+Recently, a number of grasp detection methods have been proposed that can be used to localize robotic grasp configurations directly from sensor data without estimating object pose. The underlying idea is to treat grasp perception analogously to object detection in computer vision. These methods take as input a noisy and partially occluded RGBD image or point cloud and produce as output pose estimates of viable grasps, without assuming a known CAD model of the object. Although these methods generalize grasp knowledge to new objects well, they have not yet been demonstrated to be reliable enough for wide use. Many grasp detection methods achieve grasp success rates (grasp successes as a fraction of the total number of grasp attempts) between 75% and 95% for novel objects presented in isolation or in light clutter. Not only are these success rates too low for practical grasping applications, but the light clutter scenarios that are evaluated often do not reflect the realities of real world grasping. This paper proposes a number of innovations that together result in a significant improvement in grasp detection performance. The specific improvement in performance due to each of our contributions is quantitatively measured either in simulation or on robotic hardware. Ultimately, we report a series of robotic experiments that average a 93% end-to-end grasp success rate for novel objects presented in dense clutter.
+Comments:	arXiv admin note: text overlap with arXiv:1603.01564
+Subjects:	Robotics (cs.RO)
+Cite as:	arXiv:1706.09911 [cs.RO]
+ 	(or arXiv:1706.09911v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.1706.09911
+Focus to learn more
+Submission history
+From: Andreas ten Pas [view email]
+[v1] Thu, 29 Jun 2017 18:03:44 UTC (8,312 KB)
+
+Access Paper:
+View PDFTeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2017-06
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+DBLP - CS Bibliography
+listing | bibtex
+Andreas ten Pas
+Marcus Gualtieri
+Kate Saenko
+Robert Platt
+Robert Platt Jr.
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

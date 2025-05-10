@@ -1,0 +1,286 @@
+Robo-ABC: Affordance Generalization Beyond Categories via Semantic
+Correspondence for Robot Manipulation
+Yuanchen Ju 1,2* Kaizhe Hu 1,2,5* Guowei Zhang 3,2 Gu zhang 1,4,2 Mingrun Jiang 2 Huazhe Xu 2,5,1† 1Shanghai Qi Zhi Institute 2IIIS, Tsinghua University 3School of Software, Tsinghua University 4Shanghai Jiao Tong University 5Shanghai AI Lab https://TEA-Lab.github.io/Robo-ABC
+Figure 1. Overview. The left illustrates the key insight of Robo-ABC (★ represents the contact point). Our goal is to endow robots with the semantic correspondence ability as humans, which can generalize the object affordance across categories in manipulation tasks. The columns on the right in order, are source images (★ represents contact points which are extracted from human videos), corresponding attention maps on the target images (★ represents inferred contact points on unseen objects), grasp poses (Grasp poses are represented by , which are generated according to the contact points ★), point cloud during grasping, and the final successful grasp results.
+Abstract
+Enabling robotic manipulation that generalizes to outof-distribution scenes is a crucial step toward open-world embodied intelligence. For human beings, this ability is rooted in the understanding of semantic correspondence among objects, which naturally transfers the interaction experience of familiar objects to novel ones. Although robots lack such a reservoir of interaction experience, the vast availability of human videos on the Internet may serve as a valuable resource, from which we extract an affordance memory including the contact points. Inspired by the natural way humans think, we propose Robo-ABC: when con
+*Equal contribution. †Corresponding author: huazhe xu@mail.tsinghua.edu.cn.
+fronted with unfamiliar objects that require generalization, the robot can acquire affordance by retrieving objects that share visual or semantic similarities from the affordance memory. The next step is to map the contact points of the retrieved objects to the new object. While establishing this correspondence may present formidable challenges at first glance, recent research finds it naturally arises from pre-trained diffusion models, enabling affordance mapping even across disparate object categories. Through the RoboABC framework, robots may generalize to manipulate outof-category objects in a zero-shot manner without any manual annotation, additional training, part segmentation, precoded knowledge, or viewpoint restrictions. Quantitatively, Robo-ABC significantly enhances the accuracy of visual af
+1
+arXiv:2401.07487v1 [cs.RO] 15 Jan 2024
+
+
+fordance retrieval by a large margin of 31.6% compared to state-of-the-art (SOTA) end-to-end affordance models. We also conduct real-world experiments of cross-category object-grasping tasks. Robo-ABC achieved a success rate of 85.7%, proving its capacity for real-world tasks.
+1. Introduction
+Imagine a future where robots assist humans to proficiently accomplish a broad spectrum of daily tasks. The fundamental challenge lies in empowering robots to find interaction strategies with both familiar and novel objects. We humans instinctively have such abilities by generalizing the affordance [3] to unseen objects through semantic mapping [43]. For example, we may figure out how to grab a badminton racket by recalling the experience of wielding a tennis racket, or how to open a microwave oven that partially resembles a cabinet. However, this ability is not innate to robots. A key challenge is to obtain such interaction experience and extract generalizable information for robot manipulation. Fortunately, there is a wealth of egocentric human-object interaction videos [35–37] available on the Internet. These videos provides valuable insights into complex interactions, as well as the temporal and motion contexts of objects. Previous works have explored a variety of methods for learning object affordances from videos, such as extracting feature embeddings from videos [41], or automatically collecting pseudo-ground-truth labels for end-to-end training [11, 29, 39]. While existing methods can predict affordance for familiar objects, they struggle to generalize to unseen objects. We aim to effectively and efficiently generalize affordance beyond object categories. To this end, we propose a general framework, Robo-ABC, that can recall object interaction experience from human videos and transfer it to novel objects. First, we extract the interaction experiences of objects from human videos and store them in an affordance memory. Second, in the face of a novel object (e.g. a screwdriver), we retrieve objects (e.g. a knife) similar to the target object from the memory based on visual and semantic similarity. The most intriguing aspect of our method is the third step, where we employ the emergent semantic correspondence ability from the diffusion models [8, 40, 44, 55] to map the retrieved contact points to the novel object. We find this procedure powerful enough to transfer affordance beyond multiple object categories. Finally, we use the obtained affordance points to select from the grasping position prior provided by AnyGrasp [13] and deploy on a real robot to complete the manipulation task. We conduct a comprehensive evaluation of Robo-ABC’s generalization ability under different settings. We evaluate the zero-shot generalization ability with other end-to-end methods, and the affor
+dance prediction success rate of Robo-ABC significantly increases by 31.6%, demonstrating the strong generalization capability to novel objects and categories. We also demonstrate Robo-ABC’s potential to generalize the affordance of one source object to objects that span a large category gap. Lastly, after deploying the Robo-ABC on a real robot using AnyGrasp [13], we show that our method can provide accurate affordance guidance for grasping in open-world, novel view, and cross-category settings. Robo-ABC reaches a prominent success rate of 85.7% over 7 object categories. Our contributions can be summarized as follows: 1) We propose a novel framework, Robo-ABC, to extract object interaction experience from human videos and transfer it to novel objects with no need for annotation, additional training, or pre-coded knowledge of any kind. 2) We demonstrate the effectiveness of our method in zero-shot affordance generalization and cross-category generalization settings, achieving a significant improvement of 31.6% in success rate over previous end-to-end methods. 3) We believe that the pipeline of Robo-ABC is versatile and naturally enjoys the benefit of the increasing ability of foundation models, both in retrieving similar objects and capturing semantic correspondence. We hope that our work will inspire future research in this direction.
+2. Related Works
+2.1. Learning visual affordance from human videos
+Visual affordance learning aims to infer where and how to interact with diverse objects from visual inputs, bridging the computer vision and robotics fields. RGB image-based affordance oklearning [2, 4, 30–33] methods focus on inferring affordances from images depicting human-object interactions. Another series of works focus on predicting affordance from 3D point cloud inputs [19–25, 61], specifically targeting articulated objects manipulation. While taking the RGB image as sensory input, our work focuses on extracting affordance from egocentric human videos [34–37], which can capture the temporal context and motion information of human-object interaction. These allow us to better understand complex actions and generalize to new objects and scenarios. Based on the diverse reservoir of human videos, previous works have investigated to learn from them the visual representation [9, 11], grasp prior [27, 38, 39, 51], and dexterous grasping skills [26, 50]. The most relevant studies to our goal are [11, 12, 28, 29, 60]. These works are dedicated to identifying the contact region with objects from human videos. However, these endto-end approaches to affordance prediction are subjected to in-domain object instances and viewpoints. Compared to previous works, Robo-ABC extracts a small-scale memory of object interaction experiences from human videos. It allows the robot to face completely new scenes with trans
+2
+
+
+Figure 2. Our pipeline. The top part is the process of extracting knowledge about object affordance from human-object videos. Subsequently, we store these information as interaction memory to serve as the robot’s interaction experience. When facing new objects, we retrieve the most similar object from the interaction memory based on visual and semantic similarity. After obtaining the contact point information, we leverage the powerful semantic correspondence capability in the diffusion model to achieve cross-object and out-of-category affordance generalization. Finally, we select the grasp pose from all the possible poses which are generated by AnyGrasp [13] to deploy on real robots. (★ represents the positions for interacting with the object, represents all possible grasp poses generated by AnyGrasp,
+represents the grasp pose selected by ★ )
+ferable manipulation knowledge. What distinguishes our method from the previous ones is our focus on capturing the semantic correspondence beyond the seen object categories to help guide robots more accurately in complex zero-shot manipulation tasks.
+2.2. Semantic correspondence for robotics
+In the robotics field, previous works [6, 15, 16, 63] have explored capturing semantic correspondences for robot manipulation. However, these works are somewhat limited to generalization within different instances of the same category, additional training or rely on user-provided goal images to perform the transfer. In this work, our goal is to achieve zero-shot generalization across object categories. Recently, foundational models such as DINO-VIT [5] and diffusion models [7, 8, 40] have demonstrated remarkable capabilities in finding semantic correspondences across objects. Specifically, features extracted from diffusion models are more versatile in mapping similar points across categories. As foundation models contain knowledge valuable
+for robotics tasks [56,57], we explore leveraging the semantic correspondence knowledge embedded within these models, eliminating the need for additional training or part segmentation. Compared to previous methods, our approach is off-the-shelf and achieves significant improvements. This provides better visual guidance information for robot manipulation tasks, allowing robots to flexibly understand and infer the affordances of different categories of objects in the open world.
+2.3. Generalizable robot manipulation
+In the development of general-purpose robots, having generalizable manipulation capabilities is crucial, especially when applying these abilities across object categories. Facing this challenge, some works [17, 18] focus on using point clouds as inputs, recognizing and manipulating actionable parts to achieve cross-category object manipulation. However, these methods typically require a large amount of annotated data or rely on effective part segmentation of the object. Recent works on general agents
+3
+
+
+Figure 3. Affordance generalization beyond categories visualization results. In each group of figures from left to right, the span of object categories gradually increases. ★ represents the contact points extracted from human videos, while ★ represents the inferred points found by Robo-ABC across object categories.
+[14, 53, 62] and dexterous grasping [47, 48, 52, 59] continue to explore new possibilities. Another line of research [15, 49] utilizes foundation models and NeRF for generalizable manipulation. However, the manipulation skills of these agents are confined to a set of known instances, and their ability to generalize falls short when encountering novel object instances. By contrast, our key motivation is to harness foundation models to extract semantic information and achieve affordance generalization beyond categories.
+3. Method
+In this study, we aim to obtain contact points for robotic manipulation, with a focus on generalizing to unseen objects and categories. The structure of this section unfolds as follows: Section 3.1 elucidates the process of extracting affordance knowledge from human videos, Section 3.2 discusses the retrieval of similar objects from the extracted interaction experience memory for new objects, Section 3.3 describes the process of utilizing the capabilities of the diffusion model to generalize the affordance of objects across object instances and categories, while Section 3.4 describes the process of applying the obtained affordance guidance to downstream robotic manipulation tasks.
+3.1. Affordance collection from human videos
+3.1.1 Affordance representation
+We define the affordance of objects as the contact points between the human hand and the object. Humans naturally contact a variety of objects at specific points during the interaction. For example, when opening a door, the hand contacts the door handle, and such action bears fruitful information on affordance. We aim to pinpoint when and where the contact takes place given a dataset of videos. We utilize an off-the-shelf hand-object interaction detector [10] to obtain the grasp state information during human-object interaction in each segment of the interaction videos. Consider a video consisting of multiple frames of a person cutting vegetables: V = {F1, ..., FN }. We first employ
+a hand-object detector to determine whether the hand and the object are contacted in each frame, as well as to obtain the pixel-level bounding box (bbox) of the hand Bh and the object Bo. Upon identifying the first frame Fj where the hand grasps the knife, we use skin segmentation [42] to precisely locate the intersection area within the hand bbox Bh and objects bbox Bo. We then randomly sample from this area to obtain the contact points P = {p1, p2, ..., pm}, where m is the sample number of contact points in a frame.
+3.1.2 Contact points mapping
+When collecting affordance information, we want the image to be clear, preferably without humans occluding the object. However, we need the frame of hand-object contact to deduce the contact point. To address this dilemma, we aim to map these contact points P back to a frame Fc when the object is not obscured. This can be achieved through calculating the homography matrix Ht between two consecutive frames to map the contact points P across different frames. There exist several criteria for the selection of Fc: Since these frames are extracted from a video, preventing motion blur in these frames are cruial. It is also preferable to retrieve the frames near the contact frame Fj, so we can reduce the mapping error. With these considerations in mind, we set a window W around the contact frame Fj to select the frame Fc where the object’s view is intact. For motion blur detection, we utilize the Laplacian operator to compute the clearest frame within the window W . We then calculate the homography matrix to map the contact point to the unobstructed frame. Lastly, we use the bounding box of the object Bo output by the hand-object detector [10] to get rid of the irrelevant surroundings of the object. We collect these cropped object images Io and contact points P to store in the affordance memory, serving as the robot’s knowledge bank of interaction experiences.
+3.2. The most similar object retrieval from memory
+When facing a new object, we need to retrieve similar objects from the collected memory. After capturing an im
+4
+
+
+Figure 4. Visualization of the affordance results. The highlighted areas are the ground truth masks, while ★ ★ ★ ★ ★ ★ indicate the predicted contact points of different methods.
+age It with the camera, we use langsam [45] to crop the object we want to interact with from the image. An image encoder Φ is used to map the cropped object image to a feature vector zcrop. We also map each object image in the memory to a feature vector zmem using the same encoder Φ. We use the cosine similarity of these two feature vectors as the proximity metric for retrieval. We divide these objects into two types: The first type includes objects within the same category that have been previously encountered in the collected interaction memory, and the second type includes objects that are unfamiliar or have never been seen before. For the seen objects, we retrieve the most similar objects in the same category. For completely new object categories, we retrieve the most similar object among all objects in the memory, regardless of the category. In practice, we find that the CLIP [46] encoder suitably meets our needs, and the effects of other encoders have been tested and demonstrated in Section 5.
+3.3. Semantic correspondence mapping for affordance generalization
+After retrieving the most similar object in the memory and the contact points of it, we utilize semantic correspondence mapping to transfer such knowledge to the current scene and object. Semantic correspondence maps points in the source image to the target image. In this work, we utilize the emergent semantic correspondence ability from the diffusion model to map the retrieved contact points to the new object, thereby guiding the robotic manipulation task in unfamiliar environments. More specifically, given a source image Is, a target image It, and a source point ps, we aim to find the corresponding point pt in the target image. We follow the steps described in [44] to extract the diffusion features (DIFT) of the source image Is and the target image It. The diffusion features are generated by first adding noise to the goal image, then denoising it through the diffusion process, while extracting the intermediate hidden features from the U-Net simultaneously. We refer the readers to the original paper
+for more details. Since the diffusion features correspond to each pixel in the goal image, we can find the pixel with the highest similarity to the source point ps in the diffusion features of the target image It. Specifically, we find that diffusion features are relatively prone to orientation mismatching between the source and the target image, so we deploy 8 rotation and flipping transformations to the source image, and select the result with the highest similarity among all transformed images. While we also tried other semantic correspondence approaches, as discussed in Section 5, we found that the diffusion model is the most effective for our task.
+3.4. Deployment in the real world
+After obtaining the contact points of the current object, we deploy on a real robot to complete the manipulation tasks. We utilize the AnyGrasp [13] to provide the grasping prior for the robot. AnyGrasp [13] can take the point cloud of the scene and provide a set of 7-DOF grasp candidates for grasping. We utilize the contact points obtained from the previous step to select the nearest grasp candidate as the final grasp pose, and use it to guide the robot to complete the manipulation task. We will discuss the details of the deployment in Appendix B.5.
+4. Experiments
+In this section, we present a comprehensive evaluation of Robo-ABC, and specifically address the following questions: 1) How does the zero-shot affordance generalization ability of Robo-ABC compare to existing end-to-end approaches for both familiar and novel object categories? 2) To what extent can Robo-ABC extrapolate affordances from a limited set of known categories to a broader spectrum of objects? 3) Upon implementation on the robot, how accurate is the semantic information provided by Robo-ABC for affordance-guided grasping, particularly in scenarios involving varying viewpoints and novel object categories? We will elaborate on these questions in the following sections. By conducting these experiments, we hope to pro
+5
+
+
+vide a comprehensive evaluation of our method’s affordance generalization ability and shed light on potential areas for further research and improvement.
+4.1. Zero-shot affordance generalization 4.1.1 Evaluation Dataset
+In this experiment, we select all the objects that are feasible for robotic manipulation from the “hold” action category of the AGD20K [30] dataset, ruling out objects that are too large for the robot to grasp such as beds and chairs. Considering the prevalence of doors and drawers in everyday life, we supplemented the evaluation set with these two additional categories following the same labeling procedure. All object categories within the evaluation data set are shown in Table 1. We use the terms seen categories and unseen categories here to refer to whether objects of the same category are present in the affordance memory.
+Table 1. For the list of seen and unseen objects in the evaluation dataset of the affordance memory
+Seen bottle, bowl, drawer, cup, door, fork knife, scissors, wine glass
+Unseen axe, badminton racket, baseball bat, frisbee, hammer, pen, toothbrush
+4.1.2 Evaluation Metrics
+In choosing the evaluation metrics, we claim that for the purpose of real-world object manipulation, the model’s output should be contact points, instead of areas resembling a probability distribution. Therefore, we compare the accuracy of the predicted contact points across different methods. As such, we selected three metrics for our evaluation. Detailed explanations are as follows: Success Rate (SR): The success rate is calculated as the proportion of successful points (those falling within the ground truth (GT) masks) to all points. Since the value of the ground truth mask ranges from 0 to 255, we set a threshold of 122 to determine whether the output is feasible while leaving the SR-threshold curve for the appendix. The success rate measures the accuracy of the output directly, making it the primary metric for affordance generalization. Normalized Scanpath Saliency (NSS): Normalized Scanpath Saliency is a straightforward method to measure the correlation between saliency maps and fixed points, calculated by averaging the normalized saliency at points of the ground truth. Since we are dealing with predicted points and ground truth maps, we have modified the formula to compute the average normalized value of the ground truth map at the output points. For ground truth map M and output points P , the formula of NSS is as follows:
+NSS = 1
+|P |
+X
+p∈P
+M(p)
+maxq∈M M(q) ∈ [0, 1] (1)
+NSS considers not only the accuracy of the output points but also their saliency. The higher the NSS, the more accurate the output points are to the center of the ground truth map. Distance to Mask (DTM): We introduce a novel metric to compute the shortest distance between the ground truth mask region and the predicted affordance position. Using the same threshold as in success rate, we can obtain the contour CR of the ground truth mask M. If the output point P is outside the mask area, we calculate the shortest distance from P to the contour CR. If the output point P is inside the contour CR, the distance to the mask is 0. DTM is then normalized by the length of the image’s diagonal.
+4.1.3 Baselines and results
+For the zero-shot affordance generalization experiments, we compare Robo-ABC with a series of previous end-to-end approaches, namely VRB [11], HOI [29], HOTSPOTS [28], and HAP [12]. Additionally, we also evaluate LOCATE [30], the work that proposed the AGD20K dataset on our benchmark. A brief introduction to these methods can be found in Appendix A.1. As we stated earlier, what we want to compare is the accuracy of the contact points rather than probabilistic distributions. Thus, we have constrained all baselines to predict points for a fair comparison. For models that output heatmaps, we select the points with the top 5 probability. As shown in Table 2, Robo-ABC achieves high success rate of 60.7%, which is 31.6% higher than the second-best method, LOCATE. This demonstrates the effectiveness of our method in generalizing affordance to unseen objects. We also observe that the NSS and DTM of Robo-ABC are significantly better than other methods, indicating that the results are closer to the center of the ground truth mask.
+Table 2. Main results on affordance prediction. Robo-ABC surpasses all baselines by a large margin on all three metrics
+Methods NSS SR DTM
+HAP [12] 0.231 22.4 0.121
+HOI [29] 0.239 26.1 0.112
+HOTSPOTS [28] 0.236 23.6 0.118
+LOCATE [30] 0.283 29.1 0.107
+VRB [11] 0.242 26.9 0.103
+Robo-ABC (Ours) 0.516 60.7 0.045
+4.2. Cross-Category Affordance generalization
+In this experiment, we aim to showcase our method’s ability to generalize the affordance of a small group of seen
+6
+
+
+bottle drawer baseball bat scissors door hammer fork wine glass frisbee pen cup axe knife badminton racket toothbrush bowl Object Categories
+0
+20
+40
+60
+80
+100
+SR (%)
+HAP HOI
+HOTSPOTS VRB
+LOCATE Ours
+Figure 5. Success rate by category. We demonstrate the performance of Robo-ABC and other baselines across various object categories within the entire evaluation dataset. As can be seen, in the vast majority of cases, Robo-ABC exhibits superior zero-shot generalization capabilities.
+objects to various objects beyond its category. To this end, we fix a category of source images and provide the contact points derived from human videos. For each object of the other category, we use the same semantic correspondence setting of Robo-ABC, then obtain the target affordance, as shown in Figure 3. The similarities between the source category to the target are gradually decreasing from left to right, demonstrating the increasing challenge of affordance generalization across objects. The correspondence model of Robo-ABC can generalize even under the most challenging circumstances, like mapping the handle of a fork to the stem of a flower, which infers the great potential of our method in generalizing affordance across object categories.
+4.3. Real-World robot experiment
+Lastly, we deploy Robo-ABC along with the VRB baseline in real-world scenarios. Our method is adept at generating semantically-informed contact points. Combined with the end-to-end grasping backbone AnyGrasp, we can conduct experiments of grasping with a variety of categories. AnyGrasp [13] is trained on a large number of real-world grasping scenarios, enabling it to generate robust and reliable grasp proposals. It takes as input a point cloud from the depth camera and outputs a set of 7-DOF grasp poses. Each detected grasp pose G is represented as g = [R ∈ R3×3, t ∈ R3×1, w ∈ R], where R, t, w signify the rotation, translation, and width of the gripper, respectively. Our robotic setup consists of a Franka arm equipped with a parallel jaw gripper, and a RGBD camera mounted to provide a monocular point cloud of the scene. Initially, we compute the contact point for the given object and ascertain its three-dimensional spatial coordinates p∗ = (x, y, z). The scene’s point cloud is then fed into AnyGrasp to generate a set of grasp candidates G:{g1, g2, ..., gN }. Among these, the pose g∗, exhibiting the minimal translational distance from point p∗, is selected as the execution pose for the robot’s end-effector.
+g∗ = arg min
+g∈G
+||t(g) − p∗|| (2)
+Our experiments are conducted over seven object categories. Robo-ABC achieves a success rate of 85.7%, compared to the baseline of 68.6%. Please refer to Appendix B.5 and C.2 for more details.
+5. Ablation Study
+In this section, we examine several implementation choices of Robo-ABC, validating their influences by controlling variables. The selected choices include the number of seen object categories for the afforance memory, the retriever encoder, the number of retrieved images, and the selection of semantic correspondence models.
+5.1. Retriever & Semantic correspondence model
+For the retriever, we compare the performance of four different encoders: CLIP-B32, CLIP-B32+LPIPS, CLIPB16, and ResNet50. The three encoders with the prefix CLIP are all based on the CLIP [58] model with different parameter sizes, and the last one is based on the ResNet50 model. Specifically, the CLIP-B32+LPIPS retriever uses the CLIP-B32 encoder with the negative LPIPS [54] loss added to the CLIP similarity, aimming to fetch the most visually and semantically similar images from the memory.
+For the semantic correspondence model, we compare the performance of four different models: DIFT [44], SDDINO [40], LDM-SC [8], and DINO-VIT [1]. While the first three correspondence methods are based on the diffusion models, the last one is based on the VIT. We refer the readers to Appendix A.2 for more details.
+The results are shown in Table 3 with all the metrics, and we can see that the CLIP-B32 encoder achieves the best performance, and the CLIP-B32+LPIPS encoder is slightly weaker. This indicates that the CLIP-B32 encoder alone can already provide decent results. For semantic correspondence methods, the DIFT [44] model achieves the best performance, and the DINO-VIT [1] model is the weakest, While the other two models are slightly worse than the DIFT [44] model.
+7
+
+
+Table 3. The performance of different retrieval methods under various correspondence models.
+Correspondence
+Retriever Encoder
+Methods
+CLIP-B32 CLIP-B32+LPIPS CLIP-B16 ResNet50
+DTM NSS SR DTM NSS SR DTM NSS SR DTM NSS SR
+DIFT [44] 0.045 0.516 60.7 0.067 0.438 50.2 0.052 0.522 60.0 0.058 0.495 56.7
+SD-DINO [40] 0.052 0.524 58.2 0.080 0.387 54.2 0.077 0.418 55.6 0.138 0.360 50.5
+DINO-VIT [1] 0.158 0.247 36.4 0.153 0.255 37.1 0.138 0.296 41.8 0.160 0.209 28.7
+LDM-SC [8] 0.087 0.390 52.0 0.106 0.385 50.9 0.096 0.408 53.5 0.141 0.304 40.7
+5.2. Memory size of seen categories
+Based on the results of the previous ablation study, we select the combination of CLIP-B32 retriever with DIFT [44] for correspondence matching. In this experiment, we fix the encoder of the retriever, aiming to validate the impact of the size of the “seen categories” on different semantic correspondence models. The results are shown in Table 4.
+Table 4. The impact of categories seen in memory on the semantic correspondence performance of different models.
+Correspondence Memory Categories
+Methods 18 36 51
+DIFT [44] 56.4 56.7 60.7
+SD-DINO [40] 53.1 53.1 58.2
+DINO-VIT [1] 39.3 37.5 36.4
+The hypothesis is that having more variety in the seen categories may improve the model’s ability to generalize and correctly match contact points. However, it is also possible that there is an optimal number of categories, beyond which model performance may not improve or even degrade because the retriever is disturbed by a large number of categories and unable to retrieve the most relevant images. By varying the number of seen categories while keeping other variables constant, we can determine the optimal number of object categories for the model to learn from, which is crucial information for improving the system’s overall performance. From the results in Table 4, we can see that the performance of the more capable models (DIFT and SD-DINO) increases as the number of seen categories increases. This result indicates that the more categories the model sees, the better the performance. However, for the less capable model of DINO-VIT, the performance peaks at 36 categories and then decreases.
+5.3. Number of retrieved images
+In this experiment, we aim to validate the impact of the number of retrieved top-k images from the retriever on the
+performance of the semantic correspondence model. The image with the highest DIFT similarity is selected for the predicted contact point. The results are shown in Table 5. We can see that the performance of the three models increases as the number of retrieved images increases, the performance may further improve shall we retrieve more images, but this is at the cost of longer inference time.
+Table 5. The performance of different models in terms of the number of retrieved images.
+Correspondence Top K
+Methods 1 3 5
+DIFT [44] 54.5 58.2 60.7
+SD-DINO [40] 53.5 59.3 58.2
+DINO-VIT [1] 37.5 32.4 36.4
+6. Conclusion
+Our work focuses on enabling robotic manipulation to generalize beyond object categories, which is crucial for embodied intelligence toward the open world. We tackle the challenge of learning to interact with various objects and transferring knowledge across different categories. Inspired by the cognition process of humans, we extract an “affordance memory” containing diverse object interaction information from human videos, then retrieve relevant objects from the memory based on visual and semantic similarity. Combined with a powerful diffusion model-based semantic correspondence mapping, our approach achieves significant generalization ability using only a small-scale memory information. Notably, our method achieves unsupervised zero-shot generalization without manual annotation, additional training, or human prior. We hope that our work will inspire future research in this direction and contribute to the development of embodied intelligence in the open world.
+Acknowledgement
+This work is supported by the National Key R&D Program of China (2022ZD0161700).
+8
+
+
+References
+[1] N. Carion, F. Massa, G. Synnaeve, N. Usunier, A. Kirillov, and S. Zagoruyko, “End-to-end object detection with transformers,” in European conference on computer vision. Springer, 2020, pp. 213–229. 7, 8, 12
+[2] Y. Zhu, A. Fathi, and L. Fei-Fei, “Reasoning about object affordances in a knowledge base representation,” in Computer Vision–ECCV 2014: 13th European Conference, Zurich, Switzerland, September 6-12, 2014, Proceedings, Part II 13. Springer, 2014, pp. 408–424. 2
+[3] J. J. Gibson, “The ecological approach to the visual perception of pictures,” Leonardo, vol. 11, no. 3, pp. 227–235, 1978. 2
+[4] A. Myers, C. L. Teo, C. Fermu ̈ller, and Y. Aloimonos, “Affordance detection of tool parts from geometric features,” in 2015 IEEE International Conference on Robotics and Automation (ICRA). IEEE, 2015, pp. 1374–1381. 2
+[5] S. Amir, Y. Gandelsman, S. Bagon, and T. Dekel, “Deep vit features as dense visual descriptors,” arXiv preprint arXiv:2112.05814, vol. 2, no. 3, p. 4, 2021. 3
+[6] Z. Jiang, H. Jiang, and Y. Zhu, “Doduo: Dense visual correspondence from unsupervised semantic-aware flow,” in arXiv preprint arXiv:2309.15110, 2023. 3
+[7] L. Tang, M. Jia, Q. Wang, C. P. Phoo, and B. Hariharan, “Emergent correspondence from image diffusion,” arXiv preprint arXiv:2306.03881, 2023. 3
+[8] E. Hedlin, G. Sharma, S. Mahajan, H. Isack, A. Kar, A. Tagliasacchi, and K. M. Yi, “Unsupervised semantic correspondence using stable diffusion,” arXiv preprint arXiv:2305.15581, 2023. 2, 3, 7, 8, 12
+[9] S. Nair, A. Rajeswaran, V. Kumar, C. Finn, and A. Gupta, “R3m: A universal visual representation for robot manipulation,” arXiv preprint arXiv:2203.12601, 2022. 2
+[10] D. Shan, J. Geng, M. Shu, and D. F. Fouhey, “Understanding human hands in contact at internet scale,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, 2020, pp. 9869–9878. 4
+[11] S. Bahl, R. Mendonca, L. Chen, U. Jain, and D. Pathak, “Affordances from human videos as a versatile representation for robotics,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023, pp. 13 778–13 790. 2, 6, 12, 13, 14
+[12] M. Goyal, S. Modi, R. Goyal, and S. Gupta, “Human hands as probes for interactive object understanding,” in Computer Vision and Pattern Recognition (CVPR), 2022. 2, 6, 12
+[13] H.-S. Fang, C. Wang, H. Fang, M. Gou, J. Liu, H. Yan, W. Liu, Y. Xie, and C. Lu, “Anygrasp: Robust and efficient grasp perception in spatial and temporal domains,” IEEE Transactions on Robotics, 2023. 2, 3, 5, 7
+[14] A. Brohan, Y. Chebotar, C. Finn, K. Hausman, A. Herzog, D. Ho, J. Ibarz, A. Irpan, E. Jang, R. Julian et al., “Do as i can, not as i say: Grounding language in robotic affordances,” in Conference on Robot Learning. PMLR, 2023, pp. 287–318. 4
+[15] Y. Wang, Z. Li, M. Zhang, K. Driggs-Campbell, J. Wu, L. Fei-Fei, and Y. Li, “d3 fields: Dynamic 3d descriptor fields for zero-shot generalizable robotic manipulation,” arXiv preprint arXiv:2309.16118, 2023. 3, 4
+[16] Z. Xue, Z. Yuan, J. Wang, X. Wang, Y. Gao, and H. Xu, “Useek: Unsupervised se (3)-equivariant 3d keypoints for generalizable manipulation,” in 2023 IEEE International Conference on Robotics and Automation (ICRA). IEEE, 2023, pp. 1715–1722. 3
+[17] H. Geng, H. Xu, C. Zhao, C. Xu, L. Yi, S. Huang, and H. Wang, “Gapartnet: Cross-category domain-generalizable object perception and manipulation via generalizable and actionable parts,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023, pp. 7081–7091. 3
+[18] H. Geng, Z. Li, Y. Geng, J. Chen, H. Dong, and H. Wang, “Partmanip: Learning cross-category generalizable part manipulation policy from point cloud observations,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023, pp. 2978–2988. 3
+[19] Y. Geng, B. An, H. Geng, Y. Chen, Y. Yang, and H. Dong, “Rlafford: End-to-end affordance learning for robotic manipulation,” in 2023 IEEE International Conference on Robotics and Automation (ICRA). IEEE, 2023, pp. 58805886. 2
+[20] C. Ning, R. Wu, H. Lu, K. Mo, and H. Dong, “Where2explore: Few-shot affordance learning for unseen novel categories of articulated objects,” arXiv preprint arXiv:2309.07473, 2023. 2
+[21] K. Cheng, R. Wu, Y. Shen, C. Ning, G. Zhan, and H. Dong, “Learning environment-aware affordance for 3d articulated object manipulation under occlusions,” arXiv preprint arXiv:2309.07510, 2023. 2
+[22] Y. Wang, R. Wu, K. Mo, J. Ke, Q. Fan, L. J. Guibas, and H. Dong, “Adaafford: Learning to adapt manipulation affordance for 3d articulated objects via few-shot interactions,” in European Conference on Computer Vision. Springer, 2022, pp. 90–107. 2
+[23] R. Wu, Y. Zhao, K. Mo, Z. Guo, Y. Wang, T. Wu, Q. Fan, X. Chen, L. Guibas, and H. Dong, “Vat-mart: Learning visual action trajectory proposals for manipulating 3d articulated objects,” arXiv preprint arXiv:2106.14440, 2021. 2
+[24] K. Mo, Y. Qin, F. Xiang, H. Su, and L. Guibas, “O2o-afford: Annotation-free large-scale object-object affordance learning,” in Conference on Robot Learning. PMLR, 2022, pp. 1666–1677. 2
+[25] K. Mo, L. J. Guibas, M. Mukadam, A. Gupta, and S. Tulsiani, “Where2act: From pixels to actions for articulated 3d objects,” in Proceedings of the IEEE/CVF International Conference on Computer Vision, 2021, pp. 6813–6823. 2
+[26] Y.-H. Wu, J. Wang, and X. Wang, “Learning generalizable dexterous manipulation from human grasp affordance,” in Conference on Robot Learning. PMLR, 2023, pp. 618–629. 2
+9
+
+
+[27] A. Kannan, K. Shaw, S. Bahl, P. Mannam, and D. Pathak, “Deft: Dexterous fine-tuning for real-world hand policies,” arXiv preprint arXiv:2310.19797, 2023. 2
+[28] T. Nagarajan, C. Feichtenhofer, and K. Grauman, “Grounded human-object interaction hotspots from video,” in Proceedings of the IEEE/CVF International Conference on Computer Vision, 2019, pp. 8688–8697. 2, 6, 12
+[29] S. Liu, S. Tripathi, S. Majumdar, and X. Wang, “Joint hand motion and interaction hotspots prediction from egocentric videos,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2022, pp. 32823292. 2, 6, 12, 13
+[30] H. Luo, W. Zhai, J. Zhang, Y. Cao, and D. Tao, “Learning affordance grounding from exocentric images,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2022, pp. 2252–2261. 2, 6, 12
+[31] Y. Ye, X. Li, A. Gupta, S. De Mello, S. Birchfield, J. Song, S. Tulsiani, and S. Liu, “Affordance diffusion: Synthesizing hand-object interactions,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023, pp. 22 479–22 489. 2
+[32] Z. Hou, B. Yu, Y. Qiao, X. Peng, and D. Tao, “Affordance transfer learning for human-object interaction detection,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2021, pp. 495–504. 2
+[33] M. Hassan and A. Dharmaratne, “Attribute based affordance detection from human-object interaction images,” in Image and Video Technology–PSIVT 2015 Workshops: RV 2015, GPID 2013, VG 2015, EO4AS 2015, MCBMIIA 2015, and VSWS 2015, Auckland, New Zealand, November 23-27, 2015. Revised Selected Papers 7. Springer, 2016, pp. 220232. 2
+[34] D. Damen, H. Doughty, G. M. Farinella, A. Furnari, E. Kazakos, J. Ma, D. Moltisanti, J. Munro, T. Perrett, W. Price et al., “Rescaling egocentric vision: Collection, pipeline and challenges for epic-kitchens-100,” International Journal of Computer Vision, pp. 1–23, 2022. 2
+[35] D. Damen, H. Doughty, G. M. Farinella, S. Fidler, A. Furnari, E. Kazakos, D. Moltisanti, J. Munro, T. Perrett, W. Price et al., “Scaling egocentric vision: The epic-kitchens dataset,” in Proceedings of the European conference on computer vision (ECCV), 2018, pp. 720–736. 2
+[36] ——, “The epic-kitchens dataset: Collection, challenges and baselines,” IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 43, no. 11, pp. 4125–4141, 2020. 2, 12
+[37] K. Grauman, A. Westbury, E. Byrne, Z. Chavis, A. Furnari, R. Girdhar, J. Hamburger, H. Jiang, M. Liu, X. Liu et al., “Ego4d: Around the world in 3,000 hours of egocentric video,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2022, pp. 18 99519 012. 2
+[38] R. Mendonca, S. Bahl, and D. Pathak, “Structured world models from human videos,” RSS, 2023. 2
+[39] S. Bahl, A. Gupta, and D. Pathak, “Human-to-robot imitation in the wild,” RSS, 2022. 2
+[40] J. Zhang, C. Herrmann, J. Hur, L. P. Cabrera, V. Jampani, D. Sun, and M.-H. Yang, “A tale of two features: Stable diffusion complements dino for zero-shot semantic correspondence,” arXiv preprint arXiv:2305.15347, 2023. 2, 3, 7, 8, 12
+[41] K. Fang, T.-L. Wu, D. Yang, S. Savarese, and J. J. Lim, “Demo2vec: Reasoning object affordances from online videos,” in The IEEE Conference on Computer Vision and Pattern Recognition (CVPR), June 2018. 2
+[42] F. Saxen and A. Al-Hamadi, “Color-based skin segmentation: An evaluation of the state of the art,” in 2014 IEEE International Conference on Image Processing (ICIP). IEEE, 2014, pp. 4467–4471. 4, 13
+[43] S. H. Creem-Regehr and J. N. Lee, “Neural representations of graspable objects: are tools special?” Cognitive Brain Research, vol. 22, no. 3, pp. 457–469, 2005. 2
+[44] L. Tang, M. Jia, Q. Wang, C. P. Phoo, and B. Hariharan, “Emergent correspondence from image diffusion,” arXiv preprint arXiv:2306.03881, 2023. 2, 5, 7, 8, 12
+[45] L. Medeiros, “lang-segment-anything,” https://github.com/ luca-medeiros/lang-segment-anything, 2023. 5
+[46] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal, G. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever, “Learning transferable visual models from natural language supervision,” in International Conference on Machine Learning, 2021. 5
+[47] Y. Xu, W. Wan, J. Zhang, H. Liu, Z. Shan, H. Shen, R. Wang, H. Geng, Y. Weng, J. Chen et al., “Unidexgrasp: Universal robotic dexterous grasping via learning diverse proposal generation and goal-conditioned policy,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023, pp. 4737–4746. 4
+[48] W. Wan, H. Geng, Y. Liu, Z. Shan, Y. Yang, L. Yi, and H. Wang, “Unidexgrasp++: Improving dexterous grasping policy learning via geometry-aware curriculum and iterative generalist-specialist learning,” arXiv preprint arXiv:2304.00464, 2023. 4
+[49] A. Rashid, S. Sharma, C. M. Kim, J. Kerr, L. Y. Chen, A. Kanazawa, and K. Goldberg, “Language embedded radiance fields for zero-shot task-oriented grasping,” in 7th Annual Conference on Robot Learning, 2023. 4
+[50] P. Mandikal and K. Grauman, “Learning dexterous grasping with object-centric visual affordances,” in 2021 IEEE international conference on robotics and automation (ICRA). IEEE, 2021, pp. 6169–6176. 2
+[51] ——, “Dexvip: Learning dexterous grasping with human hand pose priors from video,” in Conference on Robot Learning. PMLR, 2022, pp. 651–661. 2
+[52] P. Li, T. Liu, Y. Li, Y. Geng, Y. Zhu, Y. Yang, and S. Huang, “Gendexgrasp: Generalizable dexterous grasping,” in 2023 IEEE International Conference on Robotics and Automation (ICRA). IEEE, 2023, pp. 8068–8074. 4
+10
+
+
+[53] S. Reed, K. Zolna, E. Parisotto, S. G. Colmenarejo, A. Novikov, G. Barth-Maron, M. Gimenez, Y. Sulsky, J. Kay, J. T. Springenberg et al., “A generalist agent,” arXiv preprint arXiv:2205.06175, 2022. 4
+[54] R. Zhang, P. Isola, A. A. Efros, E. Shechtman, and O. Wang, “The unreasonable effectiveness of deep features as a perceptual metric,” in CVPR, 2018. 7
+[55] G. Luo, L. Dunlap, D. H. Park, A. Holynski, and T. Darrell, “Diffusion hyperfeatures: Searching through time and space for semantic correspondence,” in Advances in Neural Information Processing Systems, 2023. 2
+[56] W. Ye, Y. Zhang, M. Wang, S. Wang, X. Gu, P. Abbeel, and Y. Gao, “Foundation reinforcement learning: towards embodied generalist agents with foundation prior assistance,” arXiv preprint arXiv:2310.02635, 2023. 3
+[57] J. Gao, K. Hu, G. Xu, and H. Xu, “Can pre-trained text-toimage models generate visual goals for reinforcement learning?” arXiv preprint arXiv:2307.07837, 2023. 3
+[58] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal, G. Sastry, A. Askell, P. Mishkin, J. Clark et al., “Learning transferable visual models from natural language supervision,” in International conference on machine learning. PMLR, 2021, pp. 8748–8763. 7
+[59] H. Li, S. Dikhale, S. Iba, and N. Jamali, “Vihope: Visuotactile in-hand object 6d pose estimation with shape completion,” IEEE Robotics and Automation Letters, 2023. 4
+[60] Y.-L. Li, H. Fan, Z. Qiu, Y. Dou, L. Xu, H.-S. Fang, P. Guo, H. Su, D. Wang, W. Wu et al., “Discovering a variety of objects in spatio-temporal human-object interactions,” arXiv preprint arXiv:2211.07501, 2022. 2
+[61] Y. Zhao, R. Wu, Z. Chen, Y. Zhang, Q. Fan, K. Mo, and H. Dong, “Dualafford: Learning collaborative visual affordance for dual-gripper object manipulation,” arXiv preprint arXiv:2207.01971, 2022. 2
+[62] Z. Xue, H. Zhang, J. Cheng, Z. He, Y. Ju, C. Lin, G. Zhang, and H. Xu, “Arraybot: Reinforcement learning for generalizable distributed manipulation through touch,” arXiv preprint arXiv:2306.16857, 2023. 4
+[63] N. Di Palo and E. Johns, “On the effectiveness of retrieval, alignment, and replay in manipulation,” IEEE Robotics and Automation Letters, 2024. 3
+11
+
+
+Appendix
+A. Introduction on Baselines
+A.1. End-to-end Affordance Model
+The main baselines we compare in this paper are endto-end affordance prediction methods, including HOI [29], HAP [12], HOTSPOTS [28], VRB [11], and LOCATE [30]. We will briefly introduce these baselines: HOI [29] primarily predicts the trajectory of the hand and the area of the object that will be contacted in the future. HAP [12] focuses on observing the state of the hand to learn state-sensitive features and object affordances, including interaction region and the grasping pose. HOTSPOTS [28] propose to perform affordance grounding, which involves determining where on the current object can the interaction occur given a specific action. VRB [11] models an object’s affordance as the contact area and the subsequent motion trajectory,then tries to predict them. LOCATE [30] focuses on images of human-object interaction to achieve affordance grounding and can transfer parts across different categories given a source image. The need for the source image makes it a ”one-shot” method in contrast to our zero-shot approach. Apart from LOCATE [30], all other baseline methods output heatmaps concerning the contact location. Particularly, both VRB [11] and HOI [29] predict both the contact area and the trajectory of the hand’s movement. However, in this work, we solely focus on the object’s contact area and do not consider the trajectory after the contact. For each baseline, we directly use the available pre-trained models that were trained on EPIC-KITCHEN [36]. In the main text, we argue that for robot manipulation, the contact should be on points rather than regions. Therefore, for all heatmaps output from the baseline methods, we selected the top five points in the heatmap for subsequent evaluation. When evaluating LOCATE [30], one label is needed for the action to be performed. For the objects selected from the original AGD-20K dataset, since they all belong to the “hold” action category of the seen setting, we organize these objects into this specific category. As for the newly collected door and drawer categories, we place them within the “open” action category of the unseen setting. For each input action label and corresponding image, LOCATE generates a localization map composed of normalized activation values, which serves as a representation of predictions for the affordance region. Consequently, we select the top five points with the highest activation values for comparison.
+A.2. Semantic Correspondence Methods
+Semantic correspondence maps pixel location in the source image to the corresponding pixel location in the target image, such that the pair of pixels bear a similar semantic meaning. These methods can find the semantic corre
+spondence beyond the category of objects, like the wings of a bird and the wings of an airplane, Recent advances find that foundation visual models have the ability to find semantic correspondence in a zero-shot manner, without additional training or finetuning. We select two lines of works in zero-shot semantic correspondence as baselines, one is based on the idea of dense feature matching, and the other is based on special token optimization. The former one includes DIFT [44], SDDINO [40], and DINO-ViT [1], while the latter one includes LDM-SC [8]. We use the official code of these methods to get the semantic correspondence results. Methods based on feature mapping first extract the feature map of the source image and the target image via encoders of the visual model, then match the feature of the source pixel to its nearest neighbor in the target image. The matching is done by calculating the cosine similarity between the source feature and the target feature. Such a straightforward approach has proven to be effective in both DINO features [1] and DIFT features [44]. And SDDINO [40] seeks to merge DINO and DIFT features to get better performance. These methods are easy to implement and don’t need training or optimization of any kind, thus having a very fast inference speed (about 30s on an A40 GPU). Methods based on special token optimization like LDMSC [8] take a different approach. They try to find a special token in the language latent space of a text-to-image diffusion model that “describes” the semantic meaning of the source pixel, then find the pixel that matches the special token best in the target model. More specifically, they first calculate the cross-attention map between the special token and the source image, and optimize the special token to maximize the attention value at the source pixel. Then, they calculate the cross-attention map between the optimized special token and the target image, and identify the target pixel as the one with the highest attention valueassociated with the special token. Because each mapping needs to optimize a special token, this approach is slower than dense feature mapping methods (about 5 min on an A40 GPU). We select DIFT as the semantic correspondence method in Robo-ABC, since it has the most balanced performance in accuracy and inference speed. Please refer to Section C.1 for a visualized comparison between these methods.
+B. Implementation Details
+B.1. Selection of Affordance Buffer
+We extract affordance information from the EpicKitchens-100 Video [36] dataset. We visualize all the videos, filtering out and removing those with poor lighting conditions, low video clarity, or the constant pres
+12
+
+
+ence of objects obstructing the view. The extraction process is similar to that of VRB [11] and HOI [29]. In addition, we added a window for motion blur detection. In this process, we employ the Laplacian operator to detect and quantify motion blur, ensuring that we can crop and select the clearest frame near the frame where contact happens. We use skin segmentation [42] to detect the intersection of the bounding box (bbox) of the object Bo and the hand Bh. We then randomly sample contact points within this area. Because some objects have a small surface area, and due to the errors in the mapping of the homography matrix between different frames, the sampled points may be outside the object. This is a significant challenge when it comes to semantic correspondence. To solve this problem, we took the average position of all the points that were mapped back. For most objects, the average position will be on the object. Then, we take this average position and randomly sample five points within a circle with a radius of four pixels around it. This procedure ensures that all the sampled contact points are on the object. The object categories we extracted are shown in the table below:
+Table 6. List of all object categories in the affordance memory
+All
+categories bottle, bowl, drawer, cup, door, fork, knife,
+cupboard, scissors, wine glass, banana, bread machine, tap, pot, lid, plate, fridge, bag, trash bin, kettle, oven, pizza, mug, cucumber, peeler, mouse, rice cooker, bag, spatula, slicer, computer keyboard, phone, container, hob, heater, onion, tray, melon, coffee maker, remote, dishwasher, spoon, processor, sponge, package, dough, meat, cheese, blender, button, tomato
+B.2. Evaluation Dataset
+Apart from the evaluation dataset from LOCATE, we collect two new types of objects using Labelme: door and drawer. For a cabinet, there may be multiple handles. When we mark the Ground Truth (GT), we mark all the possible interactive positions to ensure the fairness of the validation.
+B.3. Memory Retrieval
+In the process of memory retrieval through visual and semantic similarity, we utilize different encoders to test the effectiveness of the retrieval results. Notably, we compare CLIP-B32, CLIP-B16 and LPIPS metrics. For the CLIP-B32+LPIPS retriever, we use the CLIPB32 encoder to retrieve the five images from the affordance memory that are most semantically similar. Subsequently, we employ a pre-trained VGG network to identify the one
+0 30 60 90 120 150 180 210 240 Mask Threshold
+0
+10
+20
+30
+40
+50
+60
+70
+Success Rate
+Success Rate on Mask Threshold
+Ours HAP HOI HOTPOTS VRB LOCATE
+Figure 6. Success rate on different mask threshold. Robo-ABC always exceeds other baselines by a large margin.
+with the minimum LPIPS value among these five images, signifying the visually most similar image to the source.
+B.4. Affordance Mapping
+During the extraction of affordance memory, we retrieved more than one contact point on the object, and experimented with two different ways of mapping the affordance memory to the target image. The first one is to map each source point to the target image separately, and then average the results. The second one is to first average the contact points, then map the average point to the target image. We found that while the second method is more effective, the first approach yields slightly better results, and we use this method in our experiments.
+B.5. Robot Hardware Setup
+For the real-world robot setup, we use the Franka Panda robot, and we set up a calibrated RealSense L515 camera externally on the robot for observations.
+Figure 7. Our workspace.
+13
+
+
+Figure 8. Visualization of different correspondence methods on the same source image.
+C. Additional Results
+C.1. Correspondence
+We visualize the correspondence results for different correspondence models and show them in Figure 8. DIFTbased methods yield the best correspondence results while having a faster inference speed.
+C.2. Real Robot Results
+The videos of real-world robot deployment results can be found in the supplementary material. We recommend watching the videos to have a better sense of Robo-ABC’s ability. We report the success rate of our method for seven object categories along with VRB [11] in Table 7. For each experiment, we reposition the object and try to grasp for five times and report the overall average success rate.
+Object bowl bottle racket scissor
+VRB 3/5 5/5 2/5 4/5
+Ours 4/5 5/5 5/5 4/5
+Object knife cup glass overall
+VRB 2/5 3/5 5/5 68.6%
+Ours 3/5 5/5 4/5 85.7%
+Table 7. Real-World Success Rate
+D. Limitations
+Although Robo-ABC has shown significant improvement in output accuracy compared to previous end-to-end methods and no manual annotation requirement or additional training, there are still many directions for improvement. In the process of extracting object affordances from human videos, we need to visualize all outputs to check the usability of the affordances produced. Moreover, the low resolution of the original dataset and the unusability of some videos due to lighting problems can affect the accuracy of finding semantic correspondences in the subsequent stage.
+14

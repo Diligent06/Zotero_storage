@@ -1,0 +1,59 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2407.08366 (cs)
+[Submitted on 11 Jul 2024]
+An Economic Framework for 6-DoF Grasp Detection
+Xiao-Ming Wu, Jia-Feng Cai, Jian-Jian Jiang, Dian Zheng, Yi-Lin Wei, Wei-Shi Zheng
+View PDF
+HTML (experimental)
+Robotic grasping in clutters is a fundamental task in robotic manipulation. In this work, we propose an economic framework for 6-DoF grasp detection, aiming to economize the resource cost in training and meanwhile maintain effective grasp performance. To begin with, we discover that the dense supervision is the bottleneck of current SOTA methods that severely encumbers the entire training overload, meanwhile making the training difficult to converge. To solve the above problem, we first propose an economic supervision paradigm for efficient and effective grasping. This paradigm includes a well-designed supervision selection strategy, selecting key labels basically without ambiguity, and an economic pipeline to enable the training after selection. Furthermore, benefit from the economic supervision, we can focus on a specific grasp, and thus we devise a focal representation module, which comprises an interactive grasp head and a composite score estimation to generate the specific grasp more accurately. Combining all together, the EconomicGrasp framework is proposed. Our extensive experiments show that EconomicGrasp surpasses the SOTA grasp method by about 3AP on average, and with extremely low resource cost, for about 1/4 training time cost, 1/8 memory cost and 1/30 storage cost. Our code is available at this https URL.
+Comments:	19 pages, 7 figures. Accepted in ECCV 2024!
+Subjects:	Robotics (cs.RO); Computer Vision and Pattern Recognition (cs.CV)
+Cite as:	arXiv:2407.08366 [cs.RO]
+ 	(or arXiv:2407.08366v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2407.08366
+Focus to learn more
+Submission history
+From: Xiao-Ming Wu [view email]
+[v1] Thu, 11 Jul 2024 10:19:48 UTC (4,742 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2024-07
+Change to browse by: cs cs.CV
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

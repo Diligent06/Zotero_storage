@@ -1,0 +1,58 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2502.16311 (cs)
+[Submitted on 22 Feb 2025]
+Supermarket-6DoF: A Real-World Grasping Dataset and Grasp Pose Representation Analysis
+Jason Toskov, Akansel Cosgun
+View PDF
+HTML (experimental)
+We present Supermarket-6DoF, a real-world dataset of 1500 grasp attempts across 20 supermarket objects with publicly available 3D models. Unlike most existing grasping datasets that rely on analytical metrics or simulation for grasp labeling, our dataset provides ground-truth outcomes from physical robot executions. Among the few real-world grasping datasets, wile more modest in size, Supermarket-6DoF uniquely features full 6-DoF grasp poses annotated with both initial grasp success and post-grasp stability under external perturbation. We demonstrate the dataset's utility by analyzing three grasp pose representations for grasp success prediction from point clouds. Our results show that representing the gripper geometry explicitly as a point cloud achieves higher prediction accuracy compared to conventional quaternion-based grasp pose encoding.
+Subjects:	Robotics (cs.RO)
+Cite as:	arXiv:2502.16311 [cs.RO]
+ 	(or arXiv:2502.16311v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2502.16311
+Focus to learn more
+Submission history
+From: Akansel Cosgun [view email]
+[v1] Sat, 22 Feb 2025 17:57:44 UTC (9,313 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2025-02
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

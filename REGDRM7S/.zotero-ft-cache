@@ -1,0 +1,319 @@
+GLOVER: Generalizable Open-Vocabulary Affordance Reasoning
+for Task-Oriented Grasping
+Teli Ma1,†, Zifan Wang1,†, Jiaming Zhou1, Mengmeng Wang2, Junwei Liang1,3,∗ 1AI, HKUST(GZ) 2ZJUT 3CSE, HKUST
+tma184@connect.hkust-gz.edu.cn junweiliang@hkust-gz.edu.cn
+†Equal Contribution *Corresponding Author
+https://teleema.github.io/projects/GLOVER/
+red apple v.s. green apple larger pan v.s. smaller pan
+pick up v.s. open the pot hold electric drill use frying pan
+Compositional Object Understanding
+Task-aware Tool Using
+AffordanceAware Grasping Estimation
+Unified GLOVER Perception
+(a)
+(b) (c)
+Downstream Grasping Tasks
+LERF-TOGO
+Multi-Camera Render
+hammer handle
+Prompt that Specify Object Parts (using LLMs)
+Coarse Affordance
+12
+3
+Single Image, no Render
+1
+2
+Fine-Grained Affordance
+3
+use hammer
+Simple Task-Oriented Prompt
+GLOVER
+Figure 1. Left: Compared with LERF-TOGO [65], GLOVER eliminates the need for capturing multi-view images for time-consuming 3D rendering and explicit instruction of the grasping part using LLMs. GLOVER is capable of providing more accurate fine-grained affordance predictions. Right: We demonstrate the efficacy of GLOVER in handling complex scenarios involving compositional object understanding and task-aware tool using under targeted human instructions, including: (a) attributes and relations like color, size, material, (b) tool function reasoning according to action, (c) common tool using in complex scenes.
+Abstract
+Inferring affordable (i.e., graspable) parts of arbitrary objects based on human specifications is essential for robots advancing toward open-vocabulary manipulation. Current grasp planners, however, are hindered by limited visionlanguage comprehension and time-consuming 3D radiance modeling, restricting real-time, open-vocabulary interactions with objects. To address these limitations, we propose GLOVER, a unified Generalizable Open-Vocabulary Affordance Reasoning framework, which fine-tunes the Large Language Models (LLMs) to predict visual affordance of graspable object parts within RGB feature space. We com
+pile a dataset of over 10,000 images from human-object interactions, annotated with unified visual and linguistic affordance labels, to enable multi-modal fine-tuning. GLOVER inherits world knowledge and common-sense reasoning from LLMs, facilitating more fine-grained object understanding and sophisticated tool-use reasoning. To enable effective real-world deployment, we present Affordance-Aware Grasping Estimation (AGE), a nonparametric grasp planner that aligns the gripper pose with a superquadric surface derived from affordance data. In evaluations across 30 real-world scenes, GLOVER achieves success rates of 86.0% in part identification and 76.3% in grasping, with speeds approximately 330 times faster in af
+arXiv:2411.12286v1 [cs.RO] 19 Nov 2024
+
+
+fordance reasoning and 40 times faster in grasping pose estimation than the previous state-of-the-art.
+1. Introduction
+Human beings have an inherent ability to manipulate objects by understanding natural language instructions, such as distinguishing between different object types, identifying objects’ locations, and determining which part to grasp based on the desired task. Motivated by this, research in robotic grasping has evolved from focusing on closedset objects [16, 49, 68] to open-vocabulary methods [2123, 27, 40, 55, 61, 65, 77]. However, these open-vocabulary grasping methods suffer from a lack of complex reasoning capabilities regarding object properties. They face challenges in locating objects with subtle linguistic distinctions (e.g., distinguishing between a red apple and a green apple as shown in Fig. 1) and determining task-specific graspable parts (e.g., pick up the pot versus open the pot as shown in Fig. 1). For example, LERF-TOGO [65] relies on offline large language models (LLMs) to infer the graspable part based on the task (hammer handle), as we show in the left of Fig. 1. Despite this, it still fails to accurately identify grasp locations due to limited visionlanguage comprehension. Additionally, many previous approaches [22, 25, 61, 65, 77] depend heavily on 3D radiance modeling [24, 50] to construct 3D feature fields, which is both time-consuming and restricts their generalizability to new scenes. To tackle the aforementioned challenges, we present a unified Generalizable Open-Vocabulary Affordance Reasoning (GLOVER) framework for open-vocabulary robotic grasping. This proposed framework aims to address three questions:
+1. How to represent the graspable part? Large Language Models (LLMs) demonstrate strong open-vocabulary reasoning capabilities and it is promising to fine-tune LLMs to output visual affordance masks. To achieve this, we define the graspable region as a global visual affordance mask, inspired by the visual affordance inferring [17, 20, 47, 60] and reasoning segmentation task [31, 41, 64]. Unlike a binary mask, this affordance mask encodes a continuous probability map, representing the likelihood of grasping at various locations. We adopt the affordance mask representation for two reasons: (1) graspable parts are better represented as regions rather than single points, and (2) predicting global masks based on language input aligns more naturally with model decoding [19, 26, 31, 39]. To support this approach, we compile a dataset of over 10,000 human-object interaction images, unifying the linguistic annotations and visual affordance annotation using a Gaussian distribution centered on graspable points.
+2. How to empower the model with complex reasoning and world knowledge to handle linguistic instruc
+tions? With the collected dataset, we fine-tune the model to generate visual affordance masks. Specifically, the finetuning process takes images and language instructions as input, leveraging LLaVA-7B [39] to perform multi-modal encoding following [31]. The encoded affordance token, which aggregates both visual and linguistic features, is fed into an affordance decoder to output the desired affordance mask. This mask is then projected into 3D space as stereo affordance for downstream tasks. GLOVER offers three main advantages: (1) It can leverage extensive 2D affordance annotations from real-world tasks, overcoming the scarcity of 3D affordance labels. (2) Fine-tuning allows GLOVER to inherit world knowledge and common-sense reasoning from the base LLM, enabling compositional object understanding and task-aware tool using as shown in Fig. 1. (3) GLOVER performs real-time, open-vocabulary affordance reasoning without scene rendering, and generalizes to novel scenes effectively.
+3. How to deploy the model efficiently in real robots? We introduce an Affordance-Aware Grasping Estimation (AGE) module that estimates gripper poses based on the geometry of affordance regions for real-world deployment. AGE is a non-parametric method that outperforms learningbased grasping planners [11, 12] in both performance and efficiency (40 times faster), without reliance on additional training data. Inspired by [42, 71], AGE samples grasping poses within the affordance space, aligning the gripper with the superquadric surface derived from the stereo affordance geometry. This approach eliminates the need for conventional grasping planners, enabling direct, affordance-aware pose estimation. Our GLOVER module achieves state-of-the-art performance in the affordance benchmark, surpassing previous methods by a significant margin. To validate real-world applicability, we deploy GLOVER in a physical robot system, testing its open-vocabulary grasping capabilities across 30 challenging object scenes. GLOVER demonstrates an average improvement of 31.3% in affordance reasoning success rate and 33.6% in grasping success rate compared to LERFTOGO [65]. Additionally, it achieves approximately ×330 faster affordance reasoning and ×40 faster grasping pose estimation.
+2. Related Work
+2.1. Open-Vocabulary Representation for Manipulation
+Many recent studies have worked on language-guided robotic tasks like navigation [2, 28, 29] and manipulation [9, 40, 65, 78]. The intervention of language plays a positive role in policy learning [16, 22, 49], value functions estimation [1, 35] and visual perception [61, 77]. Among them, the open-vocabulary manipulation is one of the most
+
+
+significant research topics. Several recent works focus on integrating 2D foundation models with 3D feature fields to achieve a 3D semantic-aware representation for openvocabulary tasks [61, 65, 67, 77]. These methods distill features from 2D foundation models like CLIP [63], DINO [4] as training objective for NeRF [50] or GaussianSplatting [24] to reconstruct 3D feature fields. However, methods based on the 3D distilled feature fields heavily rely on time-consuming radiance modeling and require re-rendering when changing scenes, which limits the generalizability to some extent. In this work, we directly finetune the 2D foundation models to generate the related affordable areas in a generalizable and open-vocabulary manner, which is robust to scenario changes.
+2.2. Task-Oriented Grasping
+Task-oriented grasping refers to grasping different parts of objects based on the tasks. Previous research solves the task via detecting related object parts [7, 21, 45, 53], modeling 3D point clouds for affordance grounding [14, 38, 70], or transferring grasps to new instances based on category [14, 23]. Recent works [9, 21, 23, 34, 45, 65, 70] leverage vision-language models to reason the object parts for grasping. LERF-TOGO [65] derives a rough 3D object mask using DINO [4] features to expand a relevant area locally. Subsequently, a LERF [25] query is conditioned on this mask to separate sub-parts of the object. Robo-ABC [23] reasons the objects’ grasping point by using CLIP [63] to retrieve objects that share semantic similarity from the affordance memory. ShapeGrasp [34] infers the contact points by prompting the large language models via Chain of Thought [73]. Almost all the above methods rely on labeled 3D part-affordance datasets or additional pretrained grasp networks like GraspNet [11], AnyGrasp [12] to infer grasping pose. However, GLOVER can leverage extensive 2D affordance data, well-trained 2D foundation models, and does not require an additional grasp planner network to estimate poses, which is more efficient.
+2.3. Visual Affordance Reasoning
+Previous research infers the affordance from human-object interactions [18, 20, 47], scene understanding [44, 61, 65] and 3D point cloud grounding [15, 52, 54, 74]. Recently, the foundation models such as LLMs and vision-language models (VLMs), have been integrated to perform affordance reasoning [17, 23, 45, 60, 70, 75]. AffCorrs [17] tackle oneshot visual affordance transfer by querying the object parts to find semantically corresponding ones via pre-trained DINO-ViT [4]. AffordanceLLM [60] train the LLaVA [39] on affordance dataset AGD20K [46], leveraging the world knowledge of the foundation model. Both Robo-ABC [23] and RAM [30] adopt the retrieve-and-transfer framework for zero-shot affordance reasoning. They construct the af
+fordance memory from 2D images and retrieve the similar demonstration from the affordance memory with the help of CLIP [63] to reason affordance in the unseen domain. Our GLOVER does not require the creation of affordance memory, instead, it reasons the affordance leveraging LLM’s world knowledge in an end-to-end manner.
+3. GLOVER Method
+In this section, we tackle two key problems for openvocabulary affordance reasoning. First, we identify an effective approach to represent visual affordance for finetuning the foundational model (Sec. 3.1). Second, we examine how to integrate affordance knowledge into an existing foundational model while preserving as much of its original world knowledge as possible (Sec.3.2- 3.4).
+3.1. VL-Affordance Dataset Construction
+Image Data collection. To enable affordance reasoning with the world knowledge of LLMs, we leverage the abundant resources of 2D images with visual affordance annotations. We select images from two common affordance datasets, AGD20K [46] and 3DOI [58]. AGD20K is a semisupervised affordance dataset that includes 23,816 images with 50 categories of objects and 36 categories of affordance, sourced mainly from COCO [37], HICO [5] and free-license websites. For our purposes, we only use the testset split of AGD20K with well-annotated visual affordance points and corresponding text labels. For 3DOI, we use 10,000 images drawn from Articulation [59], EpicKitchen [8], and Taskonomy [76], which contain over 5,000 affordance-related interaction points. However, 3DOI does not include text labels for the interactable objects. Both AGD20K and 3DOI images feature a mix of egocentric and exocentric views. We collect the linguistic and visual affordance annotations as follows.
+Generate the linguistic affordance labels. To address missing object labels in the 3DOI [58] dataset, we utilize VLMs for linguistic annotating, followed by human crossvalidation to correct any errors. Specifically, we first crop objects from the background based on the bounding box annotations of the images. The cropped object images are then fed into a vision-language foundation model, SEEDX-17B [13], and prompt it with “What is the object in the image?”. We manually filter the generated answers to retain only relevant object categories to ensure accurate annotations. See dataset construction in Fig. 2.
+Unify the visual affordance annotations. Visual affordances represent the interaction points where humans engage with objects. Predicting affordance through global masks from language inputs aligns more naturally with model decoding. Hence, following the approach in 3DOI [58], we transform affordance points into a 2D Gaussian bump representation. For human-object interaction
+
+
+Dataset Construction
+cabinet
+basket
+drawer
+door Gaussian distribution
+Crop objects
+VLMs annotate
+Visual annotations
+Linguistic annotations
+GLOVER
+Vision❄ Backbone
+Multi-modal
+LLM❄ It is <AFF>
+Affordance
+☀ Decoder
+What part of the Apple Vision Pro should we interact with to pick it up?
+AffordanceAware Grasping Estimation
+Point Cloud Affordance
+Camera Intrinsics Gripper
+Translation&
+Orientation
+Real-World Grasping
+Visual Affordance
+Depth
+1
+2
+3
+Figure 2. An overview of our method (Our contributions are highlighted with colored numbers). 1. We annotate the categories with the VLM and unify the affordance representation. 2. We fine-tune the affordance decoder to decode the affordance token [AFF], which encodes multi-modal information from multi-modal LLM. The fine-tuned GLOVER infers visual affordance in an open-vocabulary manner. 3. The affordance-aware grasping estimation module estimates gripper pose based on stereo affordance representation. See Fig. 3.
+points in a 2D image, represented as ak = [xk, yk] for k = 1, 2, . . . , N , we define the affordance probability mask as:
+Mˆ aff (i, j) = exp − (i − xk)2 + (j − yk)2
+2σ2 , (1)
+where σ is the standard deviation, and (i, j) ∈ [0, W ] × [0, H] is the spatial indice within the image. Dataset overview. In the end, we obtain a dataset consisting of 12,215 images with 52,240 instances of humanobject interactions. The images cover indoor and outdoor scenes, as well as egocentric and exocentric views. Each instance is annotated with both visual and linguistic affordance labels. We believe that our dataset will benefit future research in vision-language affordances.
+3.2. From Segmentation to Affordance Reasoning
+A key distinction between 2D affordance reasoning and traditional 2D instance segmentation is that affordance reasoning produces a continuous probability map, rather than a binary mask. An intuitive idea is to extend VLMs for open-vocabulary segmentation, enabling them to perform open-vocabulary affordance reasoning. This approach enables affordance reasoning while preserving the founda
+tional model’s open-world knowledge in a cost-effective way. LISA [31] is a large language-instructed segmentation VLM built on an LLM. We adpot the LISA’s structure, which includes a vision backbone, a multi-modal LLM (i.e., LLaVA [39]), and a segmentation decoder. We initialize GLOVER with the LISA-7B pre-trained weights.
+3.3. Model Details
+Prompt constructing. To guide the multi-modal LLM (LLaVA [39]) in generating tokens for affordance decoding, we construct prompts in the format: “<IMG> What part of the [OBJ] should we interact with to [ACT] it?”, where <IMG> represents image tokens, and [OBJ] and [ACT] specify the object name and action, respectively. “[ACT] it” will be removed from the prompt if the annotation does not exist.
+Multi-modal encoding. We follow the Embedding-asMask paradigm in LISA, adding a new affordance token <AFF> to encode combined visual and linguistic features. Given a text prompt t and an input image i, we feed them into the LLaVA model FLLM to obtain a response r (of a sequence of feature vectors):
+r = FLLM (i, t), (2)
+
+
+where the encoded <AFF> token feature u is included in r. Visual encoding. The visual features are important for affordance perception. We adopt the ViT [10] backbone Fenc to aggregate visual features, encoded as:
+f = Fenc(i), (3)
+Visual affordance decoding. With the affordance token u carrying vision-language knowledge, we decode the visual affordance conditioned on it in the visual feature space f . We follow LISA [31] and SAM [26] to stack Transformer decoder blocks for affordance decoding. Each decoder block consists of self-attention and bi-directional crossattention. This process is formulated as:
+M aff = Fdec(u, f ), (4)
+where Fdec represents the visual affordance decoder. Please refer to Fig. 2 for the pipeline.
+3.4. Training Objective
+To preserve the foundational model’s world knowledge, we freeze the language model component and fine-tune only the affordance decoder parameters specific to our task. Hence, GLOVER is trained end-to-end with only affordance loss to update the affordance decoder. Unlike segmentation mask decoding, which often relies on crossentropy and DICE losses, we employ the sigmoid focal loss [36] for affordance decoding, as it better handles the continuous distribution of affordance probabilities. The training objective is defined as:
+L = Laff = FL(M aff , Mˆ aff ). (5)
+4. Affordance-Aware Grasping Estimation
+With the inferred visual affordance, the next question is determining how the agent can interact with objects based on these affordances to effectively manipulate them. This question is challenging as the projected stereo affordances (see 4.1) from the visual affordances have complicated and irregular geometric surfaces, making it difficult to identify a global optimal point to grasp. To address this, we propose an affordance-aware grasping estimation (AGE) method. We model these irregular geometric surfaces using superquadric recovery techniques [6, 32, 42, 56, 57, 69, 71] and estimate the gripper pose by aligning it with the affordance-derived superquadric. We describe the details below (and illustrated in Fig. 3).
+4.1. Stereo Affordance Preprocessing
+We first map the deduced visual affordance onto stereo space using the RGB-D camera’s intrinsic parameters, before pre-processing the stereo affordance regions to reduce noise. Since the model may infer multiple clusters in the
+DownSample
+DBSCAN Cluster
+Pose Estimation
+Superquadric Recovery
+superquadric surface
+gripper ellipsoid
+(a) (b)
+(c)
+(d)
+(e)
+noise
+Figure 3. Illustration of Affordance-Aware Grasping Estimation (AGE). (a) Voxel down-sampled point clouds. (b) Filter the noise with DBSCAN [66] clustering. (c) Recover superquadric A from filtered stereo affordance. (d) Denote the gripper similarly as an ellipsoid surface G. (e) Estimate the grasp pose by aligning the A and G.
+stereo affordance space, we filter out those with low affordance weights. Specifically, we first down-sample the point cloud with voxel down-sampling. Then, we apply DBSCAN [66], a density-based clustering algorithm, to divide the affordances into distinct clusters. We calculate the mean affordance weight for each cluster and discard the 3D point clouds of clusters with low mean weights.
+4.2. Superquadric Recovery from Stereo Affordance
+Superquadrics represent a class of geometric shapes that can model diverse forms. To determine the grasping pose from complex affordance regions, we reconstruct superquadrics from high-weight geometric structures within the affordance point clouds, representing each superquadric as A. This process centers on identifying an optimal set of parameters λ ∈ R11 to maximize alignment between N stereo affordance points ai = [xi, yi, zi] (i = 1, . . . , N ) and the superquadric surface. Inspired by superquadric recovery methods [42, 71], we minimize the radial Euclidean distance from the ai to the superquadric surface A for aligning. To integrate the affordance weight, this process can be formulated as:
+mλ iAn
+N
+X
+i=1
+Wi
+pλV (F (ai, λA) − 1)
+2
++ βV (λA) . (6)
+
+
+The affordance weight Wi ensures the inclination towards affordance points with high probability when estimating surface geometries of superquadrics. The inside-outside function (F (ai, λA) − 1)2 aims to minimize the radial Euclidean distance, while the term λV is the superquadric volume coefficient, deprecating the expansion of the superquadric volume. To further control the range of the recovered superquadric, we construct a penalty term based on the estimated volume of superquadrics, termed as βV (λA).
+4.3. Grasp Pose Estimation
+We denote the gripper similarly as an ellipsoid surface following previous works [42, 72]. The gripper’s pose is defined by a 7D vector x = [xg, yg, zg, qgx, qgy, qgz, qgw], where (xg, yg, zg) are the coordinates of the gripper’s position and (qgx, qgy, qgz, qgw) are its orientation quaternions. Our pose estimation method is to identify a pose x that allows the gripper ellipsoid G to align with the affordance superquadric A while satisfying constraints that ensure x is within the gripper’s reach (Fig. 3). This can be formalized as the following nonlinear constrained optimization problem:
+mxin
+L
+X
+i=1
+((F (px
+i , λA) − 1))2 ,
+subject to:
+Ci (ci, px
+1 , . . . , px
+L) > 0.
+(7)
+The cost function Eq.(7) aims to minimize the distance between the affordance superquadric A and L points px
+i, which are sampled from the closest half of the gripper ellipsoid G. This choice prevents the gripper from penetrating the object by ensuring that only the nearest portion of G approaches A, thus avoiding potential collisions. Constraint terms Ci(·) are employed to ensure the generation of safe grasping poses, such as avoiding self-collision and collision with enviromental obstacles.
+5. Experiments
+In this section, we establish a comprehensive experimental framework to validate the effectiveness and efficiency of GLOVER. We compare with previous methods in both the real-world grasping (Sec. 5.3) and visual affordance reasoning benchmark (Sec. 5.4). Efficiency analysis (Sec.5.5) and ablations (Sec. 5.6) are also performed to analyze the model components.
+5.1. Implementation Details
+We fine-tuned our GLOVER based on LISA-7B [31], LLaVA [39], and SAM [26] on eight NVIDIA A6000 GPUs for 5 epochs, requiring approximately 18 hours to complete. The initial learning rate is 5e − 5 and we use the
+AdamW [43] optimizer by default. For the real-world experiments, we collect the RGB-D images with an Orbbec Femto Bolt, with an image size of 1280 × 960. The experiments are deployed on a UR5e robot arm in our implementation.
+5.2. Real-World Task Design
+We evaluate GLOVER on a wide range of objects from diverse scenes, focusing on two main challenges: compositional object understanding, and task-aware tool using.
+Compositional object understanding refers to the agent’s understanding of the fine-grained object attributes like colors, sizes, materials and relations in a compositional way. Here, the agent must select the correct object based on specific human instructions, even when the instructions are morphologically similar. This task is highly challenging, as it requires the agent to correctly interpret affordances associated with each object under potentially confusing instructions.
+We design three sub-tasks for compositional object understanding, namely attributes, relations, and complex scenes. The attributes task evaluates the agents’ understanding of colors, sizes, and materials of different objects. The relations task challenges the agents’ ability to understand spatial relations, like “above” or “below” mug shown in Fig. 4 (a). For complex scenes, we assess the model’s capacity for object-level perception by increasing the difficulty for the models to select objects based on language instructions through complex multi-object scenes (Fig. 4 (b)).
+Task-aware tool using requires reasoning about which parts of common tools are relevant to various everyday tasks based on vague functional descriptions. We split the task into two sub-tasks, namely tool use and function reason.
+For tool use, we prompt GLOVER with phrases composed of verbs plus nouns, such as “pick up the hammer”, to assess the agent’s understanding of the general affordances of everyday tools. Examples are shown in Fig. 4 (c). In contrast, function reasoning tests the agent’s understanding of the functions associated with different parts of a tool. This task requires more precise visual perception and sophisticated reasoning, as different verbs applied to the same tool (e.g., “pick up” vs. “dispense” the sanitizer) imply varying affordances. This setup demands intricate common-sense reasoning from the agent, as shown in Fig. 4 (d).
+Evaluation. The scenes and objects we used are elaborated in the Sec. 7 and Table 6. For each scene, we vary the object positions and orientations to test it 10 times, and report the success rate. The success rate includes affordance and grasping success rate, referring to the success rate of affordance reasoning and real-world grasping. For real-world grasping, we only test the scenes with successfully reasoned affordance.
+
+
+(a) (b)
+(c) (d)
+green apple real electric drill plastic mug
+mug below
+tape
+common tools cut with v.s. pick up knife port v.s. plug dispense
+sanitizer
+pick up bottle
+v.s.
+Figure 4. Examples of inferred visual affordance in mulitple scenes. The testing scenes are designed to evaluate the model’s compositional object understanding (attributes, relations, complex scenes) and task-aware tools using (tool using, function reasoning).
+Compositional Object Understanding Task-Aware Tool Using
+Method Attribute(70) Relation(30) Complex Scene(50) Tool Use(100) Function Reason(50) #AVG
+Aff. Real Aff. Real Aff. Real Aff. Real Aff. Real Aff. Real
+VRB [3] 52.9% 37.1% 36.7% 20.0% 8.0% 6.0% 58.0% 32.0% 0.0% 0.0% 36.7% 22.3% LERF-TOGO [65] 58.6% 45.7% 30.0% 23.3% 76.0% 62.0% 64.0% 53.0% 22.0% 10.0% 54.7% 42.7% LISA∗ [31] - 34.0% - 13.3% - 14.0% - 7.0% - 0.0% - 10.7% GLOVER 95.7% 84.3% 80.0% 73.3% 82.0% 68.0% 88.0% 80.0% 76.0% 68.0% 86.0% 76.3%
+Table 1. Real-world experimental results. The Attribute, Relation, Complex Scene, Tool Use and Function Reason have 7, 3, 5, 10, 5 test scenes, respectively. All the scenes are evaluated 10 times by varying the object arrangements. We report the affordance reaso ing and real-world grasping success rates to compare with previous methods.
+5.3. Real-World Results
+We report the real-world performance of GLOVER and compare it with baseline models to demonstrate its effectiveness. Baselines. We construct three baselines for comparisons. VRB [3] predicts contact points by learning from human video demonstrations. LERF-TOGO [65] reconstructs the scenes dynamically via LERF [25], extracting 3D object masks from DINO [4] features and conditioning objectpart queries based on these masks. We also replace our GLOVER module with the original LISA-7B [31] model, which we denote as LISA∗, to highlight the effectiveness of our affordance fine-tuning. For a fair comparison, we provide LERF-TOGO with ambiguous language queries rather than specific part queries (which require an additional LLM to infer). Since LISA∗ outputs binary masks, we estimate grasping poses using superquadrics based on the stereo binary mask and report the real-world grasping results. Results. The performance are reported in Table 1. Our model surpasses the previous approach, LERF-TOGO [65], achieving an average increase of 31.3% in affordance success rate and 33.6% in real-world grasping success rate. Key findings include: (1) VRB [3] performs poorly in scenes that need reasoning based on human instructions due to the lack of language processing capabilities; (2)
+LERF-TOGO performs well with object recognition but lacks the complex reasoning required for interpreting object relations and diverse tool functions, likely due to the bag-of-words [62] limitation; (3) In contrast to the original LISA model, our model exhibits finer object component perception, resulting in more precise interactive regions and improved real-world grasping accuracy. In summary, GLOVER excels in both intricate common-sense reasoning and precise affordance inference.
+5.4. Affordance Comparisons
+We follow previous SOTA methods to compare affordance capabilities in the following benchmark. AGD20K [46] is a large-scale affordance dataset with a test split for fair comparisons. We follow AffordanceLLM [60] and LOCATE [33] to report the results evaluated on the hard split of AGD20K testing. Evaluation metrics. Following the previous work, we adopt the Kullback-Leibler Divergence (KLD), Similarity (SIM), and Normalized Scanpath Saliency (NSS) as evaluation metrics. Lower KLD values and higher SIM and NSS values indicate better affordance inference. Further details on these metrics are elaborated in the Sec. 8. Results. The results in Table 2 show that GLOVER significantly outperforms previous methods across all three met
+
+
+Methods KLD ↓ SIM ↑ NSS ↑
+Cross-View-AG [47] 2.092 0.209 0.138 Cross-View-AG+ [48] 2.034 0.218 0.342 LOCATE [33] 1.829 0.282 0.276 LOCATE-Sup [33] 2.003 0.224 0.435 LOCATE-Sup-OWL [33, 51] 2.127 0.206 0.314 3DOI [58] 4.017 0.200 0.549 VRB [3] 2.154 0.258 0.236 AffordanceLLM [60] 1.661 0.361 0.947 GLOVER 1.098 0.476 1.552
+Table 2. Visual affordance results in the benchmarking dataset. GLOVER outperforms previosu state-of-the-art methods by a large margin in all the three metrics.
+rics. Note that the testing images are filtered out from the training set of GLOVER in this comparison. The results highlight the effectiveness of our fine-tuning method in enhancing foundation models for open-vocabulary affordance reasoning.
+5.5. Efficiency Analysis
+We assess GLOVER’s efficiency in terms of time required for affordance reasoning and grasping pose estimation. The process of affordance reasoning includes both scene capture and model inference. For LERF-TOGO, this process requires rendering the scene, which takes a few minutes. As shown in Table 3, GLOVER achieves approximately 330 times faster affordance reasoning compared to LERF-TOGO. For grasping pose estimation, our proposed AGE (Sec. 4) is about 40 times faster than the GraspNet [11] used in LERF-TOGO. All the time costs are reported on a single NVIDIA 4090 GPU. The results demonstrate the efficiency of our approach. This high efficiency enables GLOVER to track moving objects dynamically, deducing affordances in a real-time way. We show some real-time tracking & affordance reasoning examples in Fig. 5. The qualitative results demonstrate the fast, precise, and robust tracking performance of our GLOVER.
+Affordance Inference Grasping Pose
+Methods Time (s) Time (s)
+LERF-TOGO [65] ∼230.0 ∼4.0 GLOVER ∼0.7 ∼0.1
+Table 3. The time costs of affordance reasoning and grasping pose process.
+5.6. Ablations
+Grasping pose estimation module. We ablate the grasping pose estimation module to show the effectiveness of the proposed AGE. We evaluate the performance of its modules from two aspects. The first one is the real-world grasping success rate. Secondly, we assess the pixel-wise spa
+tial distance (PWS-Distance) between the predicted grasp point and the point of maximum probability in the visual affordance map, as a direct measurement of grasping pose quality. We compare AGE with the popular GraspNet [11] and AnyGrasp [12], both of which are learning-based pose estimation models trained on large datasets. Each scene in Sec. 5.2 is tested five times, and we report the average realworld success rate and PWS-Distance across all scenes. Results in Table 5 show that AGE outperforms both learningbased methods in both metrics.
+Methods Real-World SR. (%) ↑ PWS-Distance ↓
+GraspNet [11] 62.0 0.179 AnyGrasp [12] 73.3 0.183 AGE 78.7 0.084
+Table 4. The performance of ablating different grasping pose estimation methods. Real-World SR. and PWS-Distance represent real-world grasping success rate (%) and pixel-wise spatial distance (between [0, 1]), respectively.
+Camera pose. We vary the RGB-D camera poses to examine the influence of viewpoint changes. We split the camera height into Low, Mid, and High and change the horizontal view to Left, Front, and Right. Each view is tested on 30 scenes for five times. Results in Table 4 indicate minimal performance differences for horizontal view changes but notable differences for vertical view changes.
+Views Low Mid High
+Left 71.3% 71.3% 68.6% Front 82.6% 85.3% 86.0% Right 78.0% 76.6% 81.3%
+Table 5. Results of GLOVER with different camera poses.
+6. Conclusion & Limitations
+In conclusion, our GLOVER framework demonstrates substantial advancements in open-vocabulary affordance reasoning and task-oriented grasping, outperforming existing methods in both accuracy and efficiency. By fine-tuning a foundational model with enhanced affordance understanding while preserving world knowledge, GLOVER achieves state-of-the-art performance across real-world grasping and affordance reasoning tasks. Our proposed AGE module enables rapid and precise grasping pose estimation, overcoming limitations in speed and adaptability seen in prior approaches. Extensive experiments and ablation studies confirm GLOVER’s capabilities in complex reasoning, efficient affordance inference, and robust grasping across diverse scenarios, positioning it as a versatile tool for real-world robotic manipulation. Despite the promises, several limitations remained. First, our primary focus is on grasping tasks, with limited
+
+
+Figure 5. The visualization of tracking performance of GLOVER. We track the object apple, earphone, mouse, oven handle from top to bottom.
+demonstration of effectiveness in long-horizon manipulation tasks. For long-horizon tasks, GLOVER decomposes into multiple steps, potentially resulting in less natural longhorizon behaviors. Second, the AGE cannot estimate the tactile information for the grasping, which limits the ability of grasping fragile objects like glass. In the future, we aim to improve the GLOVER from the above two aspects.
+References
+[1] Michael Ahn, Anthony Brohan, Noah Brown, Yevgen Chebotar, Omar Cortes, Byron David, Chelsea Finn, Chuyuan Fu, Keerthana Gopalakrishnan, Karol Hausman, et al. Do as i can, not as i say: Grounding language in robotic affordances. arXiv preprint arXiv:2204.01691, 2022. 2
+[2] Peter Anderson, Qi Wu, Damien Teney, Jake Bruce, Mark Johnson, Niko Su ̈nderhauf, Ian Reid, Stephen Gould, and
+
+
+Anton Van Den Hengel. Vision-and-language navigation: Interpreting visually-grounded navigation instructions in real environments. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 3674–3683, 2018. 2 [3] Shikhar Bahl, Russell Mendonca, Lili Chen, Unnat Jain, and Deepak Pathak. Affordances from human videos as a versatile representation for robotics. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 13778–13790, 2023. 7, 8 [4] Mathilde Caron, Hugo Touvron, Ishan Misra, Herve ́ J ́egou, Julien Mairal, Piotr Bojanowski, and Armand Joulin. Emerging properties in self-supervised vision transformers. In Proceedings of the IEEE/CVF international conference on computer vision, pages 9650–9660, 2021. 3, 7 [5] Yu-Wei Chao, Zhan Wang, Yugeng He, Jiaxuan Wang, and Jia Deng. Hico: A benchmark for recognizing human-object interactions in images. In Proceedings of the IEEE international conference on computer vision, pages 1017–1025, 2015. 3 [6] Laurent Chevalier, Fabrice Jaillet, and Atilla Baskurt. Segmentation and superquadric modeling of 3d objects. 2003. 5
+[7] Fu-Jen Chu, Ruinian Xu, and Patricio A Vela. Learning affordance segmentation for real-world robotic manipulation via synthetic images. IEEE Robotics and Automation Letters, 4(2):1140–1147, 2019. 3 [8] Dima Damen, Hazel Doughty, Giovanni Maria Farinella, Antonino Furnari, Evangelos Kazakos, Jian Ma, Davide Moltisanti, Jonathan Munro, Toby Perrett, Will Price, et al. Rescaling egocentric vision: Collection, pipeline and challenges for epic-kitchens-100. International Journal of Computer Vision, pages 1–23, 2022. 3 [9] Norman Di Palo and Edward Johns. Dinobot: Robot manipulation via retrieval and alignment with vision foundation models. arXiv preprint arXiv:2402.13181, 2024. 2, 3
+[10] Alexey Dosovitskiy. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv preprint arXiv:2010.11929, 2020. 5
+[11] Hao-Shu Fang, Chenxi Wang, Minghao Gou, and Cewu Lu. Graspnet-1billion: A large-scale benchmark for general object grasping. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 1144411453, 2020. 2, 3, 8 [12] Hao-Shu Fang, Chenxi Wang, Hongjie Fang, Minghao Gou, Jirong Liu, Hengxu Yan, Wenhai Liu, Yichen Xie, and Cewu Lu. Anygrasp: Robust and efficient grasp perception in spatial and temporal domains. IEEE Transactions on Robotics, 2023. 2, 3, 8 [13] Yuying Ge, Sijie Zhao, Jinguo Zhu, Yixiao Ge, Kun Yi, Lin Song, Chen Li, Xiaohan Ding, and Ying Shan. Seed-x: Multimodal models with unified multi-granularity comprehension and generation. arXiv preprint arXiv:2404.14396, 2024. 3
+[14] Haoran Geng, Helin Xu, Chengyang Zhao, Chao Xu, Li Yi, Siyuan Huang, and He Wang. Gapartnet: Cross-category domain-generalizable object perception and manipulation
+via generalizable and actionable parts. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 7081–7091, 2023. 3 [15] Yiran Geng, Boshi An, Haoran Geng, Yuanpei Chen, Yaodong Yang, and Hao Dong. Rlafford: End-to-end affordance learning for robotic manipulation. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 5880–5886. IEEE, 2023. 3 [16] Ankit Goyal, Jie Xu, Yijie Guo, Valts Blukis, Yu-Wei Chao, and Dieter Fox. Rvt: Robotic view transformer for 3d object manipulation. In Conference on Robot Learning, pages 694710. PMLR, 2023. 2 [17] Denis Hadjivelichkov, Sicelukwanda Zwane, Lourdes Agapito, Marc Peter Deisenroth, and Dimitrios Kanoulas. One-shot transfer of affordance regions? affcorrs! In Conference on Robot Learning, pages 550–560. PMLR, 2023. 2, 3
+[18] Mahmudul Hassan and Anuja Dharmaratne. Attribute based affordance detection from human-object interaction images. In Image and Video Technology–PSIVT 2015 Workshops: RV 2015, GPID 2013, VG 2015, EO4AS 2015, MCBMIIA 2015, and VSWS 2015, Auckland, New Zealand, November 23-27, 2015. Revised Selected Papers 7, pages 220–232. Springer, 2016. 3 [19] Kaiming He, Xinlei Chen, Saining Xie, Yanghao Li, Piotr Dolla ́r, and Ross Girshick. Masked autoencoders are scalable vision learners. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 1600016009, 2022. 2 [20] Zhi Hou, Baosheng Yu, Yu Qiao, Xiaojiang Peng, and Dacheng Tao. Affordance transfer learning for human-object interaction detection. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 495–504, 2021. 2, 3 [21] Siyuan Huang, Haonan Chang, Yuhan Liu, Yimeng Zhu, Hao Dong, Peng Gao, Abdeslam Boularias, and Hongsheng Li. A3vlm: Actionable articulation-aware vision language model. arXiv preprint arXiv:2406.07549, 2024. 2, 3
+[22] Wenlong Huang, Chen Wang, Ruohan Zhang, Yunzhu Li, Jiajun Wu, and Li Fei-Fei. Voxposer: Composable 3d value maps for robotic manipulation with language models. arXiv preprint arXiv:2307.05973, 2023. 2
+[23] Yuanchen Ju, Kaizhe Hu, Guowei Zhang, Gu Zhang, Mingrun Jiang, and Huazhe Xu. Robo-abc: Affordance generalization beyond categories via semantic correspondence for robot manipulation. arXiv preprint arXiv:2401.07487, 2024. 2, 3 [24] Bernhard Kerbl, Georgios Kopanas, Thomas Leimku ̈hler, and George Drettakis. 3d gaussian splatting for real-time radiance field rendering. ACM Trans. Graph., 42(4):139–1, 2023. 2, 3 [25] Justin Kerr, Chung Min Kim, Ken Goldberg, Angjoo Kanazawa, and Matthew Tancik. Lerf: Language embedded radiance fields. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 19729–19739, 2023. 2, 3, 7 [26] Alexander Kirillov, Eric Mintun, Nikhila Ravi, Hanzi Mao, Chloe Rolland, Laura Gustafson, Tete Xiao, Spencer White
+
+
+head, Alexander C Berg, Wan-Yen Lo, et al. Segment anything. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 4015–4026, 2023. 2, 5, 6
+[27] Mia Kokic, Danica Kragic, and Jeannette Bohg. Learning task-oriented grasping from human activity datasets. IEEE Robotics and Automation Letters, 5(2):3352–3359, 2020. 2 [28] Jacob Krantz, Erik Wijmans, Arjun Majumdar, Dhruv Batra, and Stefan Lee. Beyond the nav-graph: Vision-and-language navigation in continuous environments. In Computer VisionECCV 2020: 16th European Conference, Glasgow, UK, August 23–28, 2020, Proceedings, Part XXVIII 16, pages 104120. Springer, 2020. 2 [29] Jacob Krantz, Aaron Gokaslan, Dhruv Batra, Stefan Lee, and Oleksandr Maksymets. Waypoint models for instructionguided navigation in continuous environments. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 15162–15171, 2021. 2 [30] Yuxuan Kuang, Junjie Ye, Haoran Geng, Jiageng Mao, Congyue Deng, Leonidas Guibas, He Wang, and Yue Wang. Ram: Retrieval-based affordance transfer for generalizable zero-shot robotic manipulation. arXiv preprint arXiv:2407.04689, 2024. 3
+[31] Xin Lai, Zhuotao Tian, Yukang Chen, Yanwei Li, Yuhui Yuan, Shu Liu, and Jiaya Jia. Lisa: Reasoning segmentation via large language model. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 9579–9589, 2024. 2, 4, 5, 6, 7 [32] Ales Leonardis, Ales Jaklic, and Franc Solina. Superquadrics for segmenting and modeling range data. IEEE Transactions on Pattern Analysis and Machine Intelligence, 19(11):1289–1295, 1997. 5 [33] Gen Li, Varun Jampani, Deqing Sun, and Laura SevillaLara. Locate: Localize and transfer object parts for weakly supervised affordance grounding. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 10922–10931, 2023. 7, 8 [34] Samuel Li, Sarthak Bhagat, Joseph Campbell, Yaqi Xie, Woojun Kim, Katia Sycara, and Simon Stepputtis. Shapegrasp: Zero-shot task-oriented grasping with large language models through geometric decomposition. arXiv preprint arXiv:2403.18062, 2024. 3
+[35] Jacky Liang, Wenlong Huang, Fei Xia, Peng Xu, Karol Hausman, Brian Ichter, Pete Florence, and Andy Zeng. Code as policies: Language model programs for embodied control. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 9493–9500. IEEE, 2023. 2 [36] T Lin. Focal loss for dense object detection. arXiv preprint arXiv:1708.02002, 2017. 5
+[37] Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays, Pietro Perona, Deva Ramanan, Piotr Dolla ́r, and C Lawrence Zitnick. Microsoft coco: Common objects in context. In Computer Vision–ECCV 2014: 13th European Conference, Zurich, Switzerland, September 6-12, 2014, Proceedings, Part V 13, pages 740–755. Springer, 2014. 3 [38] Suhan Ling, Yian Wang, Ruihai Wu, Shiguang Wu, Yuzheng Zhuang, Tianyi Xu, Yu Li, Chang Liu, and Hao Dong. Articulated object manipulation with coarse-to-fine affordance for
+mitigating the effect of point cloud noise. In 2024 IEEE International Conference on Robotics and Automation (ICRA), pages 10895–10901. IEEE, 2024. 3 [39] Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Visual instruction tuning. arXiv preprint arXiv:2304.08485, 2023. 2, 3, 4, 6 [40] Peiqi Liu, Yaswanth Orru, Chris Paxton, Nur Muhammad Mahi Shafiullah, and Lerrel Pinto. Ok-robot: What really matters in integrating open-knowledge models for robotics. arXiv preprint arXiv:2401.12202, 2024. 2
+[41] Shilong Liu, Zhaoyang Zeng, Tianhe Ren, Feng Li, Hao Zhang, Jie Yang, Chunyuan Li, Jianwei Yang, Hang Su, Jun Zhu, et al. Grounding dino: Marrying dino with grounded pre-training for open-set object detection. arXiv preprint arXiv:2303.05499, 2023. 2
+[42] Weixiao Liu, Yuwei Wu, Sipu Ruan, and Gregory S Chirikjian. Robust and accurate superquadric recovery: A probabilistic approach. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 2676–2685, 2022. 2, 5, 6 [43] I Loshchilov. Decoupled weight decay regularization. arXiv preprint arXiv:1711.05101, 2017. 6
+[44] Guanxing Lu, Shiyi Zhang, Ziwei Wang, Changliu Liu, Jiwen Lu, and Yansong Tang. Manigaussian: Dynamic gaussian splatting for multi-task robotic manipulation. arXiv preprint arXiv:2403.08321, 2024. 3
+[45] Yuhao Lu, Yixuan Fan, Beixing Deng, Fangfu Liu, Yali Li, and Shengjin Wang. Vl-grasp: a 6-dof interactive grasp policy for language-oriented objects in cluttered indoor scenes. In 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pages 976–983. IEEE, 2023. 3 [46] Hongchen Luo, Wei Zhai, Jing Zhang, Yang Cao, and Dacheng Tao. Learning affordance grounding from exocentric images. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 2252–2261, 2022. 3, 7 [47] Hongchen Luo, Wei Zhai, Jing Zhang, Yang Cao, and Dacheng Tao. Learning affordance grounding from exocentric images. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 2252–2261, 2022. 2, 3, 8 [48] Hongchen Luo, Wei Zhai, Jing Zhang, Yang Cao, and Dacheng Tao. Grounded affordance from exocentric view. International Journal of Computer Vision, 132(6):19451969, 2024. 8 [49] Teli Ma, Jiaming Zhou, Zifan Wang, Ronghe Qiu, and Junwei Liang. Contrastive imitation learning for languageguided multi-task robotic manipulation. arXiv preprint arXiv:2406.09738, 2024. 2
+[50] Ben Mildenhall, Pratul P Srinivasan, Matthew Tancik, Jonathan T Barron, Ravi Ramamoorthi, and Ren Ng. Nerf: Representing scenes as neural radiance fields for view synthesis. Communications of the ACM, 65(1):99–106, 2021. 2, 3
+[51] Matthias Minderer, Alexey Gritsenko, Austin Stone, Maxim Neumann, Dirk Weissenborn, Alexey Dosovitskiy, Aravindh Mahendran, Anurag Arnab, Mostafa Dehghani, Zhuoran
+
+
+Shen, et al. Simple open-vocabulary object detection. In European Conference on Computer Vision, pages 728–755. Springer, 2022. 8 [52] Kaichun Mo, Leonidas J Guibas, Mustafa Mukadam, Abhinav Gupta, and Shubham Tulsiani. Where2act: From pixels to actions for articulated 3d objects. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 6813–6823, 2021. 3 [53] Austin Myers, Ching L Teo, Cornelia Fermu ̈ller, and Yiannis Aloimonos. Affordance detection of tool parts from geometric features. In 2015 IEEE International Conference on Robotics and Automation (ICRA), pages 1374–1381. IEEE, 2015. 3 [54] Chuanruo Ning, Ruihai Wu, Haoran Lu, Kaichun Mo, and Hao Dong. Where2explore: Few-shot affordance learning for unseen novel categories of articulated objects. Advances in Neural Information Processing Systems, 36, 2024. 3
+[55] Abhishek Padalkar, Acorn Pooley, Ajinkya Jain, Alex Bewley, Alex Herzog, Alex Irpan, Alexander Khazatsky, Anant Rai, Anikait Singh, Anthony Brohan, et al. Open xembodiment: Robotic learning datasets and rt-x models. arXiv preprint arXiv:2310.08864, 2023. 2
+[56] Despoina Paschalidou, Ali Osman Ulusoy, and Andreas Geiger. Superquadrics revisited: Learning 3d shape parsing beyond cuboids. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 10344–10353, 2019. 5 [57] Despoina Paschalidou, Luc Van Gool, and Andreas Geiger. Learning unsupervised hierarchical part decomposition of 3d objects from a single rgb image. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 1060–1070, 2020. 5 [58] Shengyi Qian and David F Fouhey. Understanding 3d object interaction from a single image. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 21753–21763, 2023. 3, 8 [59] Shengyi Qian, Linyi Jin, Chris Rockwell, Siyi Chen, and David F Fouhey. Understanding 3d object articulation in internet videos. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 15991609, 2022. 3 [60] Shengyi Qian, Weifeng Chen, Min Bai, Xiong Zhou, Zhuowen Tu, and Li Erran Li. Affordancellm: Grounding affordance from vision language models. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 7587–7597, 2024. 2, 3, 7, 8 [61] Ri-Zhao Qiu, Yafei Hu, Ge Yang, Yuchen Song, Yang Fu, Jianglong Ye, Jiteng Mu, Ruihan Yang, Nikolay Atanasov, Sebastian Scherer, et al. Learning generalizable feature fields for mobile manipulation. arXiv preprint arXiv:2403.07563, 2024. 2, 3 [62] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning transferable visual models from natural language supervision. In International conference on machine learning, pages 8748–8763. PMLR, 2021. 7
+[63] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning transferable visual models from natural language supervision. In International conference on machine learning, pages 8748–8763. PMLR, 2021. 3 [64] Hanoona Rasheed, Muhammad Maaz, Sahal Shaji, Abdelrahman Shaker, Salman Khan, Hisham Cholakkal, Rao M Anwer, Eric Xing, Ming-Hsuan Yang, and Fahad S Khan. Glamm: Pixel grounding large multimodal model. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 13009–13018, 2024. 2 [65] Adam Rashid, Satvik Sharma, Chung Min Kim, Justin Kerr, Lawrence Yunliang Chen, Angjoo Kanazawa, and Ken Goldberg. Language embedded radiance fields for zero-shot task-oriented grasping. In 7th Annual Conference on Robot Learning, 2023. 1, 2, 3, 7, 8 [66] Erich Schubert, Jo ̈rg Sander, Martin Ester, Hans Peter Kriegel, and Xiaowei Xu. Dbscan revisited, revisited: why and how you should (still) use dbscan. ACM Transactions on Database Systems (TODS), 42(3):1–21, 2017. 5
+[67] William Shen, Ge Yang, Alan Yu, Jansen Wong, Leslie Pack Kaelbling, and Phillip Isola. Distilled feature fields enable few-shot language-guided manipulation. arXiv preprint arXiv:2308.07931, 2023. 3
+[68] Mohit Shridhar, Lucas Manuelli, and Dieter Fox. Perceiveractor: A multi-task transformer for robotic manipulation. In Conference on Robot Learning, pages 785–799. PMLR, 2023. 2 [69] Franc Solina and Ruzena Bajcsy. Recovery of parametric models from range images: The case for superquadrics with global deformations. IEEE transactions on pattern analysis and machine intelligence, 12(2):131–147, 1990. 5
+[70] Yaoxian Song, Penglei Sun, Yi Ren, Yu Zheng, and Yue Zhang. Learning 6-dof fine-grained grasp detection based on part affordance grounding. arXiv preprint arXiv:2301.11564, 2023. 3
+[71] Giulia Vezzani, Ugo Pattacini, and Lorenzo Natale. A grasping approach based on superquadric models. In 2017 IEEE International Conference on Robotics and Automation (ICRA), pages 1579–1586. IEEE, 2017. 2, 5 [72] Giulia Vezzani, Ugo Pattacini, Giulia Pasquale, and Lorenzo Natale. Improving superquadric modeling and grasping with prior on object shapes. In 2018 IEEE International Conference on Robotics and Automation (ICRA), pages 6875–6882. IEEE, 2018. 6 [73] Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, et al. Chain-of-thought prompting elicits reasoning in large language models. Advances in neural information processing systems, 35:24824–24837, 2022. 3 [74] Ruihai Wu, Kai Cheng, Yan Zhao, Chuanruo Ning, Guanqi Zhan, and Hao Dong. Learning environment-aware affordance for 3d articulated object manipulation under occlusions. Advances in Neural Information Processing Systems, 36, 2024. 3 [75] Kechun Xu, Shuqi Zhao, Zhongxiang Zhou, Zizhang Li, Huaijin Pi, Yifeng Zhu, Yue Wang, and Rong Xiong. A
+
+
+joint modeling of vision-language-action for target-oriented grasping in clutter. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 11597–11604. IEEE, 2023. 3 [76] Amir R Zamir, Alexander Sax, William Shen, Leonidas J Guibas, Jitendra Malik, and Silvio Savarese. Taskonomy: Disentangling task transfer learning. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 3712–3722, 2018. 3 [77] Yuhang Zheng, Xiangyu Chen, Yupeng Zheng, Songen Gu, Runyi Yang, Bu Jin, Pengfei Li, Chengliang Zhong, Zengmao Wang, Lina Liu, et al. Gaussiangrasper: 3d language gaussian splatting for open-vocabulary robotic grasping. arXiv preprint arXiv:2403.09637, 2024. 2, 3
+[78] Jiaming Zhou, Teli Ma, Kun-Yu Lin, Ronghe Qiu, Zifan Wang, and Junwei Liang. Mitigating the human-robot domain discrepancy in visual pre-training for robotic manipulation. arXiv preprint arXiv:2406.14235, 2024. 2
+
+
+GLOVER: Generalizable Open-Vocabulary Affordance Reasoning
+for Task-Oriented Grasping
+Supplementary Material
+7. Real-World Evaluation Dataset
+We construct 30 real-world experimental scenes, including two main tasks, namely Compositional Object Understanding and Task-Aware Tool Using.
+Compositional object understanding refers to the agent’s understanding of the fine-grained object attributes like colors, sizes, materials and relations in a compositional way. Here, the agent must select the correct object based on specific human instructions, even when the instructions are morphologically similar. This task is highly challenging, as it requires the agent to correctly interpret affordances associated with each object under potentially confusing instructions. We design three sub-tasks for compositional object understanding, namely attributes, relations, and complex scenes. The attributes task evaluates the agents’ understanding of colors, sizes, and materials of different objects. The relations task challenges the agents’ ability to understand spatial relations, like “above” or “below” mug. For complex scenes, we assess the model’s capacity for objectlevel perception by increasing the difficulty for the models to select objects based on language instructions through complex multi-object scenes. Note that the number of distractors in the complex scenes ranges from 5 to 15. The objects used in the task are specified in Table 6. Task-aware tool using requires reasoning about which parts of common tools are relevant to various everyday tasks based on vague functional descriptions. We split the task into two sub-tasks, namely tool use and function reason. For tool use, we prompt GLOVER with phrases composed of verbs plus nouns, such as “pick up the hammer”, to assess the agent’s understanding of the general affordances of everyday tools. In contrast, function reasoning tests the agent’s understanding of the functions associated with different parts of a tool. This task requires more precise visual perception and sophisticated reasoning, as different verbs applied to the same tool (e.g., “pick up” vs. “dispense” the sanitizer) imply varying affordances. This setup demands intricate common-sense reasoning from the agent. The objects we used are specified in Table 6.
+8. Evaluation Metrics
+We elaborate on the three metrics we used in evaluating the GLOVER in the affordance benchmark.
+Kullback-Leibler Divergence (KLD) quantifies the distribution variance between the predicted affordance map
+M aff and the ground truth Mˆ aff ( M aff , Mˆ aff ∈ RH×W ). We first calculate the min-max normalization for each pixel in the M aff and Mˆ aff .
+Mˆ i
+aff = Mˆ i
+af f /
+X Mˆ aff , (8)
+Mi
+aff = M i
+af f /
+X
+M aff . (9)
+Then the KLD is formulated as:
+KLD(Mˆ aff ||M aff ) =
+X
+i
+Mˆ i
+aff · log(
+Mˆ i
+af f
+Mi
+af f
+). (10)
+Similiary (SIM), also known as histogram intersection, quantifies the overlap between the predicted affordance map M aff and the ground truth Mˆ aff .
+SIM(M aff , Mˆ aff ) =
+X
+i
+min(M i
+aff , Mˆ i
+aff ). (11)
+Normalized Scanpath Saliency (NSS) evaluates the alignment between the M aff and the ground truth Mˆ aff . We first pre-process the M aff and Mˆ aff as:
+Mˆ = I(Mˆ aff > 0.1), (12)
+M = M aff − μ(M aff )
+σ(M aff ) , (13)
+where I is the indicator function and μ, σ represent the mean and standard deviation of M aff .NSS is calculated as the mean of the normalized predictions at binary ground truth locations:
+NSS(M, Mˆ ) = 1
+P Mˆ
+X
+i
+(M × Mˆ i). (14)
+
+
+Task Sub-Tasks #Num Objects
+Compositional Attribute 7 apple, mug, electric drill, pan, cup, spoon, fork
+Object Relation 3 mug, cup, pan
+Understanding Complex Scene∗ 5 tape, goggles, tennis racket, electric drill, fruit
+Task-Aware Tool Use 10 screwdriver, knife, scissors, hammer, pliers, saw, electric drill, tape measure, pot, pan
+Tool Using Function Reason 5 knife, charger, sanitizer bottle, pot, tissue box
+Table 6. The specific details of testing scenes we used in the model evaluation. Please note that our model can conduct open-vocabulary affordance reasoning and grasping on nearly any object encountered in daily life. Balancing experimental requirements and practical constraints, we selected specific objects to construct the experiments, with the aim of standardizing the testing of different models’ capabilities. (* In the Complex scene, the distractors are from all objects we own, over 5 items per scene.)

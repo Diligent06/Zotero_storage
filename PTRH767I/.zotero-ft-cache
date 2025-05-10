@@ -1,0 +1,145 @@
+Supermarket-6DoF: A Real-World Grasping Dataset and Grasp Pose Representation Analysis
+Jason Toskov1 and Akansel Cosgun2
+Abstract—We present Supermarket-6DoF, a real-world dataset of 1500 grasp attempts across 20 supermarket objects with publicly available 3D models. Unlike most existing grasping datasets that rely on analytical metrics or simulation for grasp labeling, our dataset provides ground-truth outcomes from physical robot executions. Among the few real-world grasping datasets, wile more modest in size, Supermarket-6DoF uniquely features full 6-DoF grasp poses annotated with both initial grasp success and post-grasp stability under external perturbation. We demonstrate the dataset’s utility by analyzing three grasp pose representations for grasp success prediction from point clouds. Our results show that representing the gripper geometry explicitly as a point cloud achieves higher prediction accuracy compared to conventional quaternion-based grasp pose encoding.
+I. INTRODUCTION
+Robotic grasping research aims to enable robots to manipulate a wide variety of real-world objects effectively. However, achieving standardized experimental practices remains a significant challenge, as researchers historically relied on objects readily available in their laboratories, limiting meaningful benchmarking efforts. To address this, the robotics community has developed standardized grasping datasets for more consistent evaluations and learning-based approaches, as shown in Table I There are three fundamental ways to label a grasp attempt: human annotation, synthetically estimated via analytical metrics and trial and error execution. Early datasets like Cornell [1] as well as Zhang et al. [2] relied on manual labeling of bounding boxes in real images to represent top-down grasp attempts with parallel grippers. While Murali et al. [3] extended this approach to crowdsourced labeling of simulated 6-DoF grasps, manual annotation has seen limited adoption due to its labor-intensive nature. A more scalable approach involves estimating grasp success through analytical grasp quality metrics without physical execution of the grasp. The Columbia grasp database [1] and Dro ̈gemu ̈ller et al. [4] evaluate top-down grasps in simulation using epsilon grasp quality and force closure metrics, respectively. Dex-Net 2.0 [5] and subsequent works [6], [7] expanded this methodology to encompass diverse grasp configurations beyond top-down grasps. However, these analytical metrics often fail to capture the complexities of real-world interactions, as demonstrated by Kappler et al. [8]. This limitation led to the adoption of simulation-based grasp execution for more direct quality assessment, both for top-down [9] and 6 DoF grasps [10]–[14]. Despite these advances, the sim-to-real gap persists, as simulated environments cannot fully replicate the physical
+1 Swiss Federal Institute of Technology Lausanne (EPFL), Switzerland 2 Deakin University, Australia
+Fig. 1: We present a real-world grasping dataset with 1500 grasp attempts on 20 supermarket objects, featuring 6-DoF grasp attempts.
+properties and dynamics of the real-world. Some researchers have attempted to bridge this gap by combining real sensor data with analytical metrics [15] or physical simulation [14].
+To overcome simulation limitations, some researchers have developed grasping datasets with physical grasp execution on real robots, such as Pinto et al. [16] and Levine et al. [17]. These datasets, however, are contrained to 4 degrees of freedom (4DoF) grasps, specifying only the end-effector’s position (x, y, z) and a single rotation (typically around the vertical z-axis). This restriction suffices for simple pick-andplace tasks but fails to address complex manipulation scenarios requiring arbitrary object orientations. While simulation-based datasets like ACRONYM [13] and MonoGraspNet [14] have incorporated full 6-DoF grasps, no real-world dataset currently features comprehensive 6-DoF grasp attempts, representing a critical gap in existing grasping datasets.
+Furthermore, traditional datasets often employ binary success labels (successful/failed) based on initial execution. However, robust evaluation requires testing grasp stability under perturbations. While robustness testing has been integrated into simulation-based datasets [8], [11], [13], real-world grasping datasets have yet to incorporate such stability assessments.
+To address these limitations, we present the Supermarket6DoF dataset1, comprising 1,500 real-world grasp attempts performed on 20 supermarket objects. Our dataset features full 6-DoF end-effector poses, enabling diverse and adaptable grasping strategies. Additionally, we investigate the impact of different gripper pose representations on grasp success prediction, providing insights into effective feature engineering for learning-based grasp synthesis [18].
+1https://lachlanchumbley.github.io/Monash-ColesGraspingDataset/.
+arXiv:2502.16311v1 [cs.RO] 22 Feb 2025
+
+
+Grasping Dataset 6DoF Num grasps
+Sim/ Real
+Labels Robust check Cornell [19] 8k Real Human Zhang et al. [2] 100k Real Human Murali et al. [3] ✓ 250k Sim Human Columbia [1] 238k Sim Analytic Dro ̈gem ̈uller [4] 15k Sim Analytic Grasp-Anything [20] 600M Sim Analytic Grasp-Anything-6D [21] ✓ 200M Sim Analytic REGRAD [6] ✓ 118k Sim Analytic Dex-Net 2.0 [5] ✓ 6.7M Sim Analytic EGAD! [7] ✓ 1M Sim Analytic GraspNet-1Billion [15] ✓ 1.2B Both Analytic Kappler et al [8] ✓ 300k Sim Analytic, Trials
+✓
+Sim-Suction [22] ✓ 3M Sim Analytic, Trials Jacquard [9] 1.1M Sim Trials Veres et al. [10] ✓ 50k Sim Trials Billion Ways [11] ✓ 1B Sim Trials ✓ 6DoF GraspNet [12] ✓ 7M Sim Trials ACRONYM [13] ✓ 17M Sim Trials ✓ MonoGraspNet [14] ✓ 20M Both Trials Pinto et al. [16] 50k Real Trials Levine et al. [17] 800k Real Trials
+Supermarket-6DoF ✓ 1.5k Real Trials ✓
+TABLE I: Grasping datasets in the literature
+II. SUPERMARKET-6DOF GRASPING DATASET
+A. Data Overview
+The Supermarket-6DoF dataset provides comprehensive data for each grasp attempt, including: • Sensor Data: A single-view eye-in-hand RGB image, a depth image, and the corresponding point cloud of the grasp scene. • Grasp Pose: The 6-DoF pose of the gripper (position and orientation) • Grasp Annotations: binary labels indicating: 1) Grasp success: Whether the object was successfully lifted by the gripper. 2) Grasp robustness: Whether the object remained stable under physical perturbation post-grasp.
+B. Object Selection
+We selected 20 objects from the Supermarket Object Set2 with the following criteria: • Diversity: Objects were chosen to represent a wide range of shapes, sizes, weights, and materials. Diverse shapes, sizes, weights, and materials • Compatibility: All objects are graspable by standard parallel-jaw grippers. • Practical Relevance: The objects reflect real-world scenarios encountered in everyday manipulation tasks. The object selection enables thorough evaluation of grasping algorithms, particularly for learning-based methods. Object details are provided in Table II.
+2https://lachlanchumbley.github.io/ColesObjectSet/.
+C. Hardware Setup
+We used a UR5 robotic arm with a Robotiq 2f-85 paralleljaw gripper. An Intel RealSense D435 RGB-D camera with an eye-in-hand configuration was attached to the robot’s wrist. While a Robotiq FT-300 force/torque sensor was attached to the setup, its readings were not utilized in the dataset. The extrinsic calibration of the camera was achieved by the easy handeye3 library.
+D. Data Collection Methodology
+For each object, we collected 75 grasp attempts: • 25 attempts with upright object placement • 50 attempts with random object orientations The data collection procedure for each grasp attempt consisted of the following steps: 1) Object Positioning: The object was either manually placed in an upright position or dropped onto the table to create a random orientation. All object positions were constrained to a predefined workspace to ensure they remained fully scannable. 2) Scene capture: A single-view scan was captured from one of four predefined scan locations. These scan locations were cycled sequentially across attempts to ensure varied perspectives. Each scan provided an RGB image, a depth image and a point cloud of the scene, transformed to the world frame. 3) Grasp Selection: Using the method described in Gualtieri et al. [23], 500 candidate 6-DoF grasp poses, along with their estimated probability of success, were generated for the scanned point cloud. The selection strategy was based on the current grasp success ratio for that object. If the success ratio was below 80%, a grasp pose was randomly selected from the top 250 proposals. If the success ratio was above 80%, a grasp pose was randomly selected from the bottom 250 proposals, with a small noise added to the pose for variability. The 80% threshold was empirically determined to maintain a balanced dataset of successful and failed grasp attempts. 4) Grasp Execution: The robot first moved the gripper to a pre-grasp pose, offset 10 cm from the selected grasp pose, before executing the grasp. The gripper was then closed around the object. If the gripper successfully closed on the object the grasp was classified as a “success”. If the gripper successfully closed on the object and lifted it, the grasp was labeled as a ”success.” For successful grasps, a stability test was conducted by lifting the object to a predefined height and rotating the wrist joint by ±90◦, simulating object perturbation. If the object remained secure throughout this process, the grasp was further labeled as “stable.” This procedure was applied to 20 supermarket objects, resulting in a total of 1,500 labeled grasp attempts. Example grasp attempts, along with their success and stability labels, are illustrated in Figure 2.
+3https://github.com/IFL-CAMP/easy handeye
+
+
+Fig. 2: Example grasps from the Supermarket-6DoF dataset. Green grasps (top) are stable successes, orange grasps (middle) are successes that aren’t stable, and red grasps (bottom) are failures.
+III. GRASP SUCCESS PREDICTION
+Grasp success prediction is the task of determining whether a given grasp pose will result in a successful grasp. This task is a critical component of grasping algorithms and has been addressed using various techniques in the literature. Past approaches have employed support vector machines (SVM) [24], convolutional neural networks (CNN) [23], and other techniques to classify whether a grasp is antipodal or other engineered grasp representation features. Some methods directly process sensor outputs, such as depth images, and include representations of the grasp pose in their models [5] [25] [26] [27]. Other approaches process the point cloud of the object, either directly [28], as a voxel grid [29], or after a point cloud representation of the gripper has been integrated into the scene [12]. Our dataset provides a benchmark for 6-DoF grasp success prediction with data collected on a parallel-jaw gripper. This section details our approach to training and evaluating a neural network for this task. We aim to demonstrate that achieving high prediction accuracy on our dataset is challenging, highlighting its value as a benchmark for future research. The code for reproducing the results is publicly available4.
+A. Problem Definition
+Grasp success prediction is defined as a binary classification problem in which, given an input x = {P, G} comprising of a point cloud of an object P and a proposed grasp pose G, we aim to predict y, which is a binary label that classifies whether the grasp will be a success when executed. Each component is detailed below. Point Cloud: The point cloud P ∈ RN×6 consists of N points, each with a corresponding location and normal vector oriented away from the center of the object. The number of points, N , varies due to differences in object sizes and the orientation and number of views used to construct the point cloud. Texture information is disregarded for this experiment.
+4https://github.com/Jason-Toskov/Real-World-Object-and-Grasping-Dataset
+Grasp: The proposed grasp G = {pG, φG} is defined by a grasp position pG ∈ R3 and a quaternion φG ∈ H of the gripper’s center where it will close. Target: The target y = fθ(x) ∈ {0, 1} defines whether the given grasp/cloud pair will result in a successful grasp. In our case, a successful grasp is indicated either by the success label or the stable success label as defined in section II-D. The goal is to learn a function fθ that maps the input x to the target y and minimises the disagreement between y and the ground truth target yˆ. The optimization objective is:
+θopt = arg min
+θ∈Θ E[L(yˆ, fθ(x))]
+where L is the binary cross entropy loss and Θ are the model parameters.
+B. Point Cloud Pre-processing
+To prepare the point clouds, we apply several pre-processing steps to remove irrelevant points (e.g., ground plane or robot elements) and normalize the data. These steps, illustrated in Figure 3, include:
+a) Original Point Cloud
+b) Workspace Cropping: Points outside the robot’s workspace are removed to exclude irrelevant data. c) Normal Computation: Normals for each point are computed and oriented away from the object’s surface. d) Ground Plane Removal: RANSAC is used to fit and remove the ground plane. e) Outlier Removal: Statistical outlier filtering eliminates spurious points not captured by RANSAC. f) Downsampling: Point clouds are randomly downsampled to 1024 points during training to maintain a consistent size.
+C. Grasp Pose Representation
+We explore three different methods for representing the grasp pose:
+
+
+Fish Flakes
+Sunscreen Roll On
+Bathroom Cleaner
+Bubbles Burger Sauce
+NPR Diced Tomatoes
+Hazelnut Spread
+Intimate Wash
+Dishwash Liquid Considered a success (model accuracy %)
+82.5 83.9 89.1 78.6 82.7 73.6 81.0 75.4 78.6 79.6
+Considered a failure (model accuracy %)
+74.5 69.8 84.2 74.4 79.6 75.8 73.0 71.4 74.6 66.6
+Success Status
+Objects
+Glowsticks Dishwash Powder
+Chest Ointment
+Gel NPR Toilet Cleaner
+Soap Box BBQ Sauce
+Water Crackers
+Salt Sunscreen Tube Considered a success (model accuracy %)
+89.2 56.7 78.0 76.9 86.6 74.6 71.1 75.1 66.3 73.5
+Considered a failure (model accuracy %)
+72.6 76.1 83.4 73.2 72.8 75.2 75.1 82.1 64.5 79.8
+Success Status
+Objects
+TABLE II: 5-fold cross-validation per-object classification accuracy for Grasp Success (Sec IV-A)
+Fig. 3: Point cloud pre-processing steps. Red color indicates points to be removed. (a) original point cloud, (b) workspace crop, (c) normal computation, (d) plane removal, (e) outlier removal, (f) downsampling.
+1) Append Grasp Pose: The grasp pose G, represented as a quaternion, is concatenated onto the first linear layer after the three point-set abstraction layers. The point cloud P is translated so that the mean position of all points is at the origin.
+2) Point Cloud in Gripper Frame: The point cloud P is transformed is transformed into the gripper’s coordinate frame.This transformation removes the need to explicitly input the grasp pose G, as it can be inferred from the relative position of the object points.
+3) Gripper as Point Cloud: A 3D mesh model of the gripper is converted into a point cloud containing the same number of points (1024) as the object point cloud. This gripper point cloud is concatenated with the object point cloud, with a binary feature added to each point to distinguish whether it belongs to the gripper or the object. This method is similar to the approach used [12]. Note that the point cloud is also represented in the gripper frame similar to Gripper as Point Cloud. These methods are illustrated in Figure 4.
+Append grasp pose Point cloud in gripper frame
+Gripper as point cloud Fig. 4: Grasp pose representations we explore for training
+D. Network Architecture and Training
+We use PointNet++ [30] as the base architecture for 6-DoF grasp success prediction due to its robustness in processing point clouds. Minor modifications were applied to adapt the model for our task. All models were trained for 200 epochs using the Adam optimizer with an initial learning rate of 0.001 (decayed by 0.7 every 20 epochs) and weight decay of 0.0001. The hyperparameters used to train the models were the same throughout all runs.
+
+
+IV. RESULTS
+A. Grasp Success Prediction
+We evaluated three different approaches for representing gripper poses in grasp success prediction using 5-fold crossvalidation, focusing initially on binary grasp success (successful lift) while setting aside stability considerations. Table III presents the comparative performance of these approaches.
+Method Accuracy (μ ± σ)
+Append grasp pose %64.2 ± 1.7
+Cloud in gripper frame %73.4 ± 1.9
+Gripper as point cloud %77.2 ± 2.8
+TABLE III: Grasp Success Prediction Accuracy
+The Gripper as Point Cloud method achieved the highest accuracy (77.2%), demonstrating that explicit modeling of gripper geometry enhances the network’s ability to understand grasp-object interactions. The Append Grasp Pose method performed least effectively (64.2%), while the Point Cloud in Gripper Frame approach showed intermediate performance (73.4%). Our findings indicate that simple quaternion representations lack sufficient context for establishing effective spatial relationships. The transformation of object point clouds into the gripper frame simplifies the learning task by creating a static grasp pose reference. Furthermore, representing the gripper as a point cloud facilitates learning of gripper-object interactions, leading to superior performance. Analysis of per-object performance (Table II) reveals some variation across the 20 test objects. The Bathroom Cleaner demonstrated the highest prediction accuracy (89% for successful grasps, 84% for failures), while the Salt container proved most challenging (66% for successful grasps, 64% for failures). These variations underscore the dataset’s complexity and its value as a benchmark for real-world grasp prediction algorithms.
+B. Stable Grasp Success Prediction
+We extended our analysis to consider “stable success”, grasps that maintain their hold through physical perturbations, a critical requirement for tasks such as object placement [31] and in-hand manipulation [32]. Among 1,500 grasps, 16% succeeded in initial lifting but failed stability testing. Retraining the model to classify these cases as failures yielded updated accuracy scores (Table IV).
+Method Accuracy (μ ± σ)
+Append grasp pose %67.3 ± 1.1
+Cloud in gripper frame %73.0 ± 1.3
+Gripper as point cloud %75.2 ± 1.0
+TABLE IV: Stable Grasp Success Prediction Accuracy
+Results were similar to the previous analysis, with Gripper as Point Cloud method maintaining superior performance (75.2%) despite a 2 percentage point decrease in accuracy compared to prediction results for standard success prediction. Notably, among the three alternatives for representing the grasp pose, representing the gripper as a point cloud still achieved the highest prediction accuracy, despite experiencing a 2 percentage point decrease. However, this decrease is relatively minor when compared to the percentage of unstable grasps in the dataset. The class imbalance in this problem, where stable successes are a minority, may have contributed to the slight reduction in accuracy. An examination on the successful grasps that were not stable revealed that two factors may be in play. Large/heavy objects present challenges in identifying slip-resistant grasp poses. Moreover, we observed that rigid objects tend to pivot during gripper rotation, possibly due to material stiffness impeding secure grasps.
+C. Comparing Success vs Stable Success Prediction
+Fig. 5: Success rate vs stable success rate of grasped objects.
+Figure 5 compares success rates with stable success rates across test objects using the best-performing grasp pose representation, Gripper as Point Cloud.
+The data reveals that predicting stable grasp success is a more difficult task than predicting standard grasp success across all objects. Notably, the top four objects with the most significant performance drop in stable grasp success prediction all weighed over 600g, highlighting object weight as a crucial factor in grasp stability. Future research can potentially incorporate object weight as an additional indicator to improve prediction performance. These findings demonstrate that models can effectively learn to identify unstable grasps without substantial performance degradation. We advocate for incorporating stability considerations in future grasp success prediction algorithms to enhance their practical utility in real-world applications.
+
+
+V. CONCLUSION
+This paper introduces the Supermarket-6DoF dataset, comprising 1,500 grasp attempts executed on a real robot. While existing datasets predominantly rely on simulated trials or analytical quality metrics, our work provides authentic grasp data executed on physical hardware. Although our dataset is smaller than comparable real-world grasping datasets (Pinto et al. [16] and Levine et al. [17]), it offers unique advantages through 6-DoF grasp poses and stability labels. Each grasp attempt includes single-view RGB and depth images alongside corresponding point clouds, providing rich sensory information for learning algorithms. Our focus on common supermarket objects, complete with available 3D models, ensures the dataset’s practical relevance while maintaining accessibility for researchers. The public availability of our dataset facilitates reproducible research. We also present an analysis of grasp pose representations for predicting grasp success using our dataset. Our results show that explicitly modeling the gripper as a point cloud significantly outperforms the conventional approach of appending grasp poses to fully connected layers. The prediction performance variations across different objects and grasp stability highlight the complexity of real-world grasping. Looking ahead, we believe that real-world datasets like Supermarket-6DoF will be instrumental in developing robust grasping algorithms capable of handling the full complexity of practical manipulation tasks.
+REFERENCES
+[1] Corey Goldfeder, Matei Ciocarlie, Hao Dang, and Peter K. Allen. The columbia grasp database. In IEEE International Conference on Robotics and Automation (ICRA), 2009.
+[2] Hanbo Zhang, Xuguang Lan, Site Bai, Xinwen Zhou, Zhiqiang Tian, and Nanning Zheng. Roi-based robotic grasp detection for object overlapping scenes. In IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2019.
+[3] Adithyavairavan Murali, Weiyu Liu, Kenneth Marino, Sonia Chernova, and Abhinav Gupta. Same object, different grasps: Data and semantic knowledge for task-oriented grasping. In Conference on Robot Learning, 2020. [4] Justus Dr ̈ogemu ̈ller, Carlos X. Garcia, Elena Gambaro, Michael Suppa, Jochen Steil, and Ma ́ximo A. Roa. Automatic generation of realistic training data for learning parallel-jaw grasping from synthetic stereo images. In International Conference on Advanced Robotics, 2021.
+[5] Jeffrey Mahler et al. Dex-net 2.0: Deep learning to plan robust grasps with synthetic point clouds and analytic grasp metrics. In Robotics: Science and Systems (RSS), 2017.
+[6] Hanbo Zhang, Deyu Yang, Han Wang, Binglei Zhao, Xuguang Lan, Jishiyu Ding, and Nanning Zheng. Regrad: A large-scale relational grasp dataset for safe and object-specific robotic grasping in clutter. IEEE Robotics and Automation Letters, 2022.
+[7] Douglas Morrison, Peter Corke, and J ̈urgen Leitner. Egad! an evolved grasping analysis dataset for diversity and reproducibility in robotic manipulation. IEEE Robotics and Automation Letters, 2020.
+[8] Daniel Kappler, Jeannette Bohg, and Stefan Schaal. Leveraging big data for grasp planning. In IEEE International Conference on Robotics and Automation (ICRA), 2015.
+[9] Amaury Depierre, Emmanuel Dellandr ́ea, and Liming Chen. Jacquard: A large scale dataset for robotic grasp detection. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2018.
+[10] Matthew Veres, Medhat A. Moussa, and Graham W. Taylor. An integrated simulator and dataset that combines grasping and vision for deep learning. ArXiv, abs/1702.02103, 2017.
+[11] Clemens Eppner, Arsalan Mousavian, and Dieter Fox. A billion ways to grasps - an evaluation of grasp sampling schemes on a dense, physicsbased grasp data set. In International Symposium on Robotics Research (ISRR), 2019.
+[12] Arsalan Mousavian, Clemens Eppner, and Dieter Fox. 6-dof graspnet: Variational grasp generation for object manipulation. In International Conference on Computer Vision (ICCV), 2019.
+[13] Clemens Eppner, Arsalan Mousavian, and Dieter Fox. ACRONYM: A large-scale grasp dataset based on simulation. In International Conference on Robotics and Automation (ICRA), 2021.
+[14] Guangyao Zhai et al. Monograspnet: 6-dof grasping with a single rgb image. In IEEE International Conference on Robotics and Automation (ICRA), 2023.
+[15] Hao-Shu Fang, Chenxi Wang, Minghao Gou, and Cewu Lu. Graspnet1billion: A large-scale benchmark for general object grasping. In IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2020.
+[16] Lerrel Pinto and Abhinav Gupta. Supersizing self-supervision: Learning to grasp from 50k tries and 700 robot hours. In IEEE international conference on robotics and automation (ICRA), 2016.
+[17] Sergey Levine, Peter Pastor, Alex Krizhevsky, Julian Ibarz, and Deirdre Quillen. Learning hand-eye coordination for robotic grasping with deep learning and large-scale data collection. The International Journal of Robotics Research (IJRR), 2018.
+[18] Rhys Newbury, Morris Gu, Lachlan Chumbley, Arsalan Mousavian, Clemens Eppner, Ju ̈rgen Leitner, Jeannette Bohg, Antonio Morales, Tamim Asfour, Danica Kragic, et al. Deep learning approaches to grasp synthesis: A review. IEEE Transactions on Robotics, 2023.
+[19] Yun Jiang, Stephen Moseson, and Ashutosh Saxena. Efficient grasping from rgbd images: Learning using a new rectangle representation. In IEEE International Conference on Robotics and Automation, 2011.
+[20] An Dinh Vuong, Minh Nhat Vu, Hieu Le, Baoru Huang, Binh Huynh, Thieu Vo, Andreas Kugi, and Anh Nguyen. Grasp-anything: Large-scale grasp dataset from foundation models. IEEE International Conference on Robotics and Automation (ICRA), 2024.
+[21] Toan Nguyen, Minh Nhat Vu, Baoru Huang, An Vuong, Quan Vuong, Ngan Le, Thieu Vo, and Anh Nguyen. Language-driven 6-dof grasp detection using negative prompt guidance. In European Conference on Computer Vision (ECCV). Springer, 2025.
+[22] Juncheng Li and David J Cappelleri. Sim-suction: Learning a suction grasp policy for cluttered environments using a synthetic benchmark. IEEE Transactions on Robotics, 2023.
+[23] Marcus Gualtieri, Andreas ten Pas, Kate Saenko, and Robert Platt. High precision grasp pose detection in dense clutter. In IEEE/RSJ International Conference on Intelligent Robots and Systems, 2016.
+[24] Andreas Ten Pas and Robert Platt. Using geometry to detect grasp poses in 3d point clouds. Robotics Research: Volume 1, 2018.
+[25] Umit Rusen Aktas, Chaoyi Zhao, Marek Kopicki, Ales Leonardis, and Jeremy L. Wyatt. Deep dexterous grasping of novel objects from a single view. Int. J. Humanoid Robotics, 2019.
+[26] Marc A c Riedlinger, Markus Voelk, Kilian Kleeberger, Muhammad Usman Khalid, and Richard Bormann. Model-free grasp learning framework based on physical simulation. In International Symposium on Robotics, 2020.
+[27] Xinchen Yan et al. Learning 6-dof grasping interaction via deep 3d geometry-aware representations. In IEEE International Conference on Robotics and Automation (ICRA), 2018.
+[28] Mark Van der Merwe, Qingkai Lu, Balakumar Sundaralingam, Martin Matak, and Tucker Hermans. Learning continuous 3d reconstructions for geometrically aware grasping. In IEEE International Conference on Robotics and Automation (ICRA), 2020.
+[29] Michel Breyer, Jen Jen Chung, Lionel Ott, Siegwart Roland, and Nieto Juan. Volumetric grasping network: Real-time 6 dof grasp detection in clutter. In Conference on Robot Learning, 2020.
+[30] Charles Ruizhongtai Qi, Li Yi, Hao Su, and Leonidas J Guibas. Pointnet++: Deep hierarchical feature learning on point sets in a metric space. Advances in neural information processing systems, 2017.
+[31] Rhys Newbury, Kerry He, Akansel Cosgun, and Tom Drummond. Learning to place objects onto flat surfaces in upright orientations. IEEE Robotics and Automation Letters, 2021.
+[32] Jason Toskov, Rhys Newbury, Mustafa Mukadam, Dana Kulic, and Akansel Cosgun. In-hand gravitational pivoting using tactile sensing. In Conference on Robot Learning, 2023.

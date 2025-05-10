@@ -1,0 +1,351 @@
+DexGrasp Anything: Towards Universal Robotic Dexterous Grasping
+with Physics Awareness
+Yiming Zhong1,∗, Qi Jiang1,∗, Jingyi Yu1, Yuexin Ma1,† 1 ShanghaiTech University {zhongym2024, jiangqi2022, yujingyi, mayuexin}@shanghaitech.edu.cn
+UnidexGrasp GraspTTA SceneDiffuser UGG Ours
+MultiDex Div.
+RealDex Suc.6
+RealDex Pen.
+RealDex Div.
+DexGRAB Suc.6
+DexGRAB Pen.
+DexGRAB Div.
+DexGraspNet
+Suc.6 DexGraspNet Pen.
+DexGraspNet Div.
+UniDexGrasp Suc.6
+UniDexGrasp Pen.
+UniDexGrasp Div.
+MultiDex Suc.6 MultiDex Pen.
+53.6 21.5
+0.22
+54.8
+18.9
+0.25
+72.2 0.27 9.60
+23.1
+34.6
+28.6
+56.5
+0.14
+0.12
+Suc.6 → Success rate (6 directions) Pen. → Penetration Div. → Diversity
+Figure 1. We present DexGrasp Anything, consistently surpassing previous dexterous grasping generation methods across five benchmarks. Visualization of our method’s results are shown on the left.
+Abstract
+A dexterous hand capable of grasping any object is essential for the development of general-purpose embodied intelligent robots. However, due to the high degree of freedom in dexterous hands and the vast diversity of objects, generating high-quality, usable grasping poses in a robust manner is a significant challenge. In this paper, we introduce DexGrasp Anything, a method that effectively integrates physical constraints into both the training and sampling phases of a diffusion-based generative model, achieving state-ofthe-art performance across nearly all open datasets. Additionally, we present a new dexterous grasping dataset containing over 3.4 million diverse grasping poses for more than 15k different objects, demonstrating its potential to advance universal dexterous grasping. Code and dataset are available at https://github.com/4DVLab/ DexGrasp-Anything
+1∗ Equal contribution. 2† Corresponding author. This work was supported by NSFC (No.62206173), Shanghai Frontiers Science Center of Human-centered Artificial Intelligence (ShangHAI), MoE Key Laboratory of Intelligent Perception and Human-Machine Collaboration (KLIP-HuMaCo).
+1. Introduction
+Dexterous grasping, serving as a foundational capability for robotic manipulation tasks, has attracted significant attention. Five-fingered dexterous hands, which closely resemble the structure of the human hand, offer significantly greater flexibility, manipulation precision, and versatility compared to simpler grippers (e.g. parallel jaw, vacuum gripper). As robots are being deployed in human environments, dexterous hands have become increasingly vital due to their ability to interact with a wide range of objects as humans and use tools designed for humans. Therefore, a precise, robust, and versatile dexterous grasping method lies at the heart of interactions in embodied intelligence.
+Earlier approaches [5, 18, 25, 28, 29, 35] on dexterous grasping have primarily relied on analytical methods, where grasping poses were optimized to meet specific physical constraints. These methods, however, face significant challenges due to the large search space and the complexity of optimizing for high degrees of freedom in dexterous hands, leading to low success rates. In contrast, datadriven methods [10, 11, 17, 21, 43–45, 47, 51] leverage large-scale datasets to learn useful priors, narrowing the search space and providing strong guidance for search ini
+arXiv:2503.08257v2 [cs.CV] 16 Mar 2025
+
+
+tialization. Regression-based methods [17, 45] that directly predict grasp parameters from object inputs often suffer from mode collapse and averaging, resulting in a limited diversity of generated grasp poses. Recently, generative methods [11, 47] have gained significant attention for their ability to enhance the diversity of generated grasp poses. Among these, diffusion models [8, 12, 39] have demonstrated a strong capability to capture the complexities of dexterous grasping and generate diverse grasp poses by iteratively transforming a simple distribution (e.g., Gaussian) into a complex, high-dimensional one [10, 21, 44, 51]. However, despite these advantages, current diffusion-based approaches [43, 45] often generate suboptimal grasp poses, resulting in hand-object penetration or insufficient contact with unsatisfactory success rates. These issues arise from the lack of constraints that enforce physical rules.
+In this work, we propose a novel dexterous grasping generation method, namely DexGrasp Anything, that integrates three carefully designed physical constraint objectives into the diffusion model during both training and sampling phases. DexGrasp Anything exhibits superior robustness and strong generalization capabilities. Specifically, we introduce the surface pulling force to ensure grasp feasibility by pulling the hand’s inner surface toward the object’s surface while avoiding interference with parts that are already sufficiently distant. We also introduce the externalpenetration repulsion force to maintain geometric accuracy of interaction by effectively preventing significant collisions between the object and the dexterous hand, and the selfpenetration repulsion force to preserve the hand’s geometry by enforcing a minimum distance between finger joints and applying repulsion when they get too close. Through our physics-aware training scheme and physics-guided sampler, these physical constraints enable our diffusion-based generator to produce practical and robust dexterous grasping poses across a wide range of objects. Through extensive experiments, we show our method achieves state-of-the-art performance on almost all open datasets, as Figure 1 shows.
+To further improve the universality of diffusion-based generative method, massive amounts of high-quality training data is necessary. While many efforts have been made to build grasping datasets, they suffer from narrow data distribution[6, 17, 22], limited object categories [17, 41], and scalability issues [19]. In light of this, we dedicate substantial efforts to further enhancing the scale, diversity, and quality of the dexterous grasping datasets. We start by gathering available dexterous grasping data from multiple sources [15, 19, 40, 41, 47], including simulated data, realcaptured data, and human hand grasping data, ensuring a diverse and comprehensive data distribution. We further scale up the dataset with a ‘model-in-the-loop’ strategy by using our grasping method and filtering method to continue generating high-quality data, inspired by the approach used in
+SAM [14]. These efforts culminates in a very large-scale dexterous grasping dataset, DexGrasp Anything (DGA) Dataset with over 3.4 million grasping poses on more than 15k objects. Experimental results demonstrate that this new dataset provides substantial benefits to grasping methods within the community. The main contribution of this work are as follows: • We propose a physics-aware diffusion generator for dexterous grasping pose generation, which effectively integrates three key physical constraints into both the training and sampling phases of the diffusion model. • Our method achieves state-of-the-art performance on five dexterous grasping datasets. • We present a new high-quality dexterous grasping dataset, the largest and most diverse to date, significantly improving the generalization capability of existing methods.
+2. Related Work
+2.1. Dexterous Grasp Generation
+Dexterous Grasping serves as a fundamental component for various complex, human-like manipulation tasks, making it a long-standing area of research in robotics. Early works mainly use manually derived analytical methods [5, 18, 25, 28, 29, 35] that based on certain physical constraints. These methods are hindered by extremely large search space and complex optimization process, leading to low success rate. Recently, data-driven approaches have emerged as a promising direction for dexterous grasping. Regressionbased methods, such as [17, 45], often generate grasping poses with limited diversity, as they rely on direct predictions from input data and may fail to explore the full range of possible grasping configurations. In contrast, generative methods [11, 47] explicitly model the conditional probability distribution of dexterous hand poses given the target object, theoretically generating diverse poses. Diffusion model-based methods [10, 21, 51] , in particular, stand out as a promising direction for more universal and robust robotic dexterous grasping for its exceptional capabilities in modeling various complex data distribution [9, 16, 20, 32, 46, 50] and generating diverse and highly realistic samples [27, 31, 33, 36]. However, existing diffusion model-based approaches are observed [43, 45] to yield sub-optimal grasping poses due to the absence of physical constraints during the training and sampling process. In this work, we delve into incorporating physical constraints into diffusion models to generate robust dexterous grasping poses for dexterous hands.
+2.2. Dexterous Grasping Dataset
+Collecting 3D dexterous grasping poses is notoriously expensive due to the complexity of hand structures. Most existing datasets are collected in simulators like
+
+
+Sampling
+Training Prompt: I want to grasp a detergent. First, provide its object category, then give a detailed description
+of its shape before making a successful grip.
+Object Category: Household Product Description: The detergent features a tall, cylindrical body with a slightly tapered neck that leads to a wide opening at the top. Broad base for stability, smooth curved sides, and a functional design for easy pouring and storage.
+: Train
+: Frozen
+: Optional : Concat.
+LLM:
+Physics-Guided Sampler
+ht
+෡h0
+P(෡h∗0| ht, εොt)
+෡h∗0
+Unet
+Ltrain
+εොt
+Physics-Aware Constraint
+Hand Input
+Object prompt
+h0 ht
+Diffusion Process
+LLM
+Point Transformer
+Text Encoder
+3D Repr.
+Object Input
+Cond.
+ht
+Representation Extraction
+Grasp Result
+∇ht(LERF + LSRF + LSPF)
+෡h0 LSPF
+LSRF
+LERF
+h0
+⇔
+⇔
+෡h∗0
+P(h෡0|ht, εොt)
+P(෡h∗0| ෡h0)
+GT
+⟸
+Physics-Aware Constraint
+⇔
+Object Input
+Noise Hand
+Unet×(t-1)
+Physics-Guided Sampler
+Representation Extraction
+Cond.
+Cond.
+htି 1 htି i
+Unet
+(ොεt, ht, ෝμφ(ht)) (εොtି i, htି i, ෝμφ(htି i))
+Scheduler
+Denoising
+Final Result
+φ
+φ
+Noise Hand
+t − 1 Result
+Figure 2. Overview of DexGrasp Anything. During training, object information is processed to extract combined semantic and spatial representations as conditioning inputs. At each noise training step, a clean-estimation of the noisy hand pose ˆh0 is derived from the predicted noise εˆt, with physics constraints guiding the noise distribution toward a cleaner, grasp-suitable distribution. During sampling, the Physics-Guided Sampler obtains the current observation ˆh0 at each denoising step and performs posterior sampling based on this observation. Physical constraints gradually guide the distribution toward a physically feasible grasp configuration ˆh∗
+0, enabling effective grasping of diverse objects.
+GraspIt! [24] and IssacGym [23] through searching in the eigengrasp space [6, 17, 22] or optimization-based methods [15, 17, 41, 47] in parameter space. However, the search-based data often follow a narrow distribution due to the low-dimensional eigengrasp space, while the recent optimization-based data still suffer from relatively success rate and contained limit number of object categories. Some real-world datasets have been collected using teleoperation systems controlled by human operators. While these datasets capture human-like grasping poses, the data collection process is prohibitively expensive and difficult to scale up. Recent advances [30, 37, 38] have explored retargeting human hand poses to dexterous robotic hands, presenting a promising avenue for leveraging human hand data in robot hand training. Despite these advancements, existing datasets still face limitations in diversity, scalability, and quality. To address these challenges, we introduce the largest and most diverse dexterous grasping dataset to date and demonstrate that our dataset significantly enhances both the quality and diversity of generated dexterous
+grasping poses, providing substantial value to existing data-driven grasping generators.
+3. Method
+We present DexGrasp Anything, an effective approach that enhances diffusion-based generators for dexterous grasping by integrating meticulously designed physical constraints. Figure 2 demonstrates an overview of our method. The following sections detail our problem formulation (Sec. 3.1), physics-aware constraints (Sec. 3.2), and the way to integrate constraints to the diffusion model’s training (Sec. 3.3) and sampling processes (Sec. 3.4), and the LLM-enhanced object representation extraction module (Sec. 3.5).
+3.1. Problem Definition
+Our goal is to generate high-quality grasping poses capable of securely holding a given object. Specifically, given a 3D object observation O, we aim to sample a diverse set of dexterous grasping poses h = {hi}n
+i=1 from a condi
+
+
+tional distribution P (h|O), where the dexterous pose h = (θ, R, t) ∈ R33 consists of the dexterous hand articulation θ ∈ R24(for ShadowHand), the global rotation R ∈ SO(3) and the global translation vector t ∈ R3. The conditional distribution P (h|O) is modeled using a diffusion model εφ(ht, O, t), which iteratively transforms an isotropic Gaussian distribution N (0, I) into the desired data distribution:
+P (h0|O) = P (hT )
+T
+Y
+t=1
+P (ht−1|ht, O),
+P (ht−1|ht, O) = N (ht−1; μφ(ht, O, t), Σφ(ht, O, t)). (1)
+3.2. Physical Constraints
+Diffusion model-based methods often fail to reach optimal performance in the absence of appropriate physical constraints. To address this, we present three tailored physical constraint objectives for our DexGrasp Anything generator, enabling the production of universal and robust dexterous grasping poses for a wide range of objects. Surface Pulling Force [47] is crucial for ensuring grasp feasibility. It enforces proximity between the inner surface of the robotic phalanges (represented by sampled point clouds) and the object’s surface. This guidance signal applies a pulling force only to points that are closer than a specified threshold, ensuring that the points on the inner surface of the fingers are pulled towards the object’s surface when they are near, but does not affect points that are already at a sufficient distance. Compute the squared Euclidean distance for each inner surface point p(i)
+dis to its near
+est neighbor on the object surface: di = minj ∥p(i)
+dis − p(j)
+obj ∥2
+We compute the surface pulling force as:
+LSPF =
+P
+i∈S
+√di
+|S| + η , (2)
+where S = {i|di < dThreshold} represents the set of points within the threshold distance and η is a numerical stability constant.
+External-penetration Repulsion Force [10] retains the spatial accuracy of hand-object interactions. It minimizes the undesired intersection between the hand and object point clouds by leveraging the signed distances. Given an object point cloud Pobj with surface normals Nobj , and a hand point cloud Phand, we first compute the nearest neighbor distance between each point in Phand and Pobj
+: di = minj ∥P (i)
+hand − P (j)
+obj ∥. We then calculate the signed distance between the hand and object points using the object normals:
+si = sign((P (j)
+obj − P (i)
+hand) · N (j)
+obj ). (3)
+Finally, the external-penetration repulsion force is defined as the maximum signed distance across all points in the batch, averaged over the batch size B:
+LERF = 1
+B
+B
+X
+i=1
+maxi(si, di). (4)
+Self-Penetration Repulsion Force [47] upholds the hand structural geometry. It addresses the issue of hand points intersecting with each other by enforcing a minimum distance between them. This ensures that the hand maintains a realistic, physically plausible shape without finger collisions. Given a set of hand points Phand, we calculate the pairwise Euclidean distances between all points: dij = ∥P (i)
+hand −P (j)
+hand∥, A repulsion force is applied when dij is smaller than a threshold dThreshold, and the self-penetration repulsion force is defined as:
+LSRF = 1
+B
+X
+i,j
+max(0, dThreshold − dij ). (5)
+3.3. Physics-Aware Training
+Diffusion Models are typically trained with a simple meansquared error (MSE) objectives:
+Lsimple = Et,x0,ε[∥ε − εφ(ht, t)∥2], (6)
+where ht is a corrupted version of the original data h0. The data corruption follows a fixed noise schedule βt:
+q(ht|ht−1) = N (ht; p1 − βtht−1, βtI),
+ht = p1 − βtht−1 + pβtεt.
+(7)
+With αt = 1 − βt and α ̄t = Πt
+i=1αi, the corruption process can be directly conditioned on h0:
+q(ht|h0) = N (ht; √α ̄th0, (1 − α ̄t)I),
+ht = √α ̄th0 + √1 − α ̄tε ̄t. (8)
+Since the training objective Lsimple is essentially a reweighted variational lower bound on negative log likelihood, it does not incorporate any explicit supervision regarding physical constraints. As a result, diffusion models often perform sub-optimally when directly generating dexterous grasping parameters, as observed in previous works [43, 45]. To facilitate our diffusion generator in capturing physics priors during training, we introduce the Physics-Aware Training paradigm, which incorporates the tailored physical constraints outlined in Sec. 3.2. The training objective involving only corrupted data ht is not well-suited for incorporating physical constraints. Using the diffusion process defined in Eq. 8, the estimated
+sample: hˆ0(ht) = √1α ̄t (ht − √1 − α ̄tεφ(ht, O, t)) could
+
+
+serve as a good proxy for introducing physical constraint into the training process of a diffusion model. We define the physically-aware training objective LPADG as a linear combination of the standard mean-squared objective and multiple physical-constraint objectives:
+LPADG = Lsimple(ht) +
+m
+X
+i=1
+αiLPAi (hˆ0(ht), εφ), (9)
+where LPAi (hˆ0(ht), εφ) is the ith physical constraint and αi is the corresponding weighting coefficient. The gradient is propagated to ht through the estimated clean sample h0 as follow:
+∂ LPADG
+∂ht
+= ∂Lsimple
+∂ht
++
+m
+X
+i=1
+αi
+∂ LPAi
+∂hˆ0
+· ∂hˆ0
+∂ht
+. (10)
+3.4. Physics-Guided Sampling
+Leveraging the learned physics priors, the well-trained diffusion generator is capable of producing physically plausible dexterous grasping poses for a given object. The physical constraints can be further enhanced during the sampling process by employing advanced sampling techniques [1, 4, 7, 48]. Classifier guidance [4] has explored the use of a timedependent classifier Ft to steer the diffusion model towards specific conditional distributions. The guidance can be approximated as an offset in the posterior mean:
+μeφ(xt, t) ← μφ(xt, t) + sΣθ,t∇xt log(Ft(y, xt)), (11)
+where s is the guidance strength. By estimating xˆ0 based on xt, the guidance signal can be extended from a timedependent classifier Ft(y, xt) to arbitrary objective functions L(x0) on clean samples. It can be achieved by mapping the objective to a density-like function:
+F (x0) = Ze−L(x0), (12)
+where Z is a normalizing constant. We define the PhysicsGuided Sampler as follows:
+μeφ(ht, O, t) ← μφ(ht, O, t)
++ sΣφ,t∇ht
+m
+X
+i=1
+αiLP Ai (hˆ0(ht), εt). (13)
+To alleviate the estimation bias on hˆ0, we apply the Spherical Gaussian Constraint [48] with a weighted gradient direction in practice. This is expressed as:
+μeφ(ht, O, t) ← μφ(ht, O, t) + r dm
+∥dm∥ , (14)
+where dm = dsample + gr(d∗ − dsample), dsample = Σφ,tε and:
+d∗ = −√nΣφ,t
+∇ht
+Pm
+i=1 αiLPAi (hˆ0(ht), εt)
+∥∇ht
+Pm
+i=1 αiLPAi (hˆ0(ht), εt)∥ . (15)
+Incorporating physics constraints during training helps guide the noise distribution toward a cleaner, grasp-suitable form. However, due to sparse supervision in the training phase, we leverage the reverse process during sampling to obtain ht and ˆh0 at each step, applying posterior sampling to iteratively refine the grasp configuration. This iterative refinement allows the Physics-Guided Sampler to progressively adjust ˆh0 under physics constraints, ultimately steering the distribution toward a physically feasible grasp configuration. Through this distributional framework, our model effectively generalizes to diverse objects, demonstrating robustness and adaptability in grasping tasks.
+3.5. LLM-enhanced Representation Extraction
+To accomplish robust dexterous grasp generation for a targeted object, we boost the traditional object representation by complementing the geometry object feature with semantic prior from powerful LLMs. We employ a Point Transformer[52] to encode object point clouds, producing an N × C feature vector, where N represents the number of groups defined by the Point Transformer. To enrich these features with abundant semantic prior from LLM, we utilize the prompt: “I want to grasp a [object label]. First, provide its object category, then give a detailed description of its shape before making a successful grip.” We then parse the response and encode each sentence using a pre-trained BERT-large-uncased model. We extract the [CLS] token from each sentence and apply max-pooling on them. This results in an 1 × C semantic feature vector that includes the rich prior knowledge from the LLM. The concatenated (N + 1) × C feature matrix is subsequently integrated into the diffusion backbone through a cross-attention mechanism, enhancing the model’s capacity to generate precise and contextually relevant grasping poses.
+4. Dataset
+The quality, diversity and scale of datasets are crucial for advancing dexterous grasping research, especially for diffusion-based generative methods. Training on a broader data distribution enables models to learn richer and more adaptable grasping strategies for arbitrary object. To inspire potential of methods towards universal dexterous grasping, we have developed a comprehensive dataset that significantly exceeds existing dexterous grasping datasets in both size and diversity. In the following sections, we provide a detailed overview of the data construction process, present key statistics, and highlight the characteristics of our DexGrasp Anything (DGA) dataset.
+
+
+Table 1. Comparison of dexterous grasp datasets. Our dataset achieves the largest scale to date.
+Dataset Publication Year Hand Type Sim./Real #Grasps #Objects #Grasps per object Construction method
+GRAB [40] ECCV 2020 MANO Real 1.64M 51 >10K Capture DDGdata [17] RSS 2020 ShadowHand Sim. 6.9k 565 - GraspIt! MultiDex [15] ICRA 2023 ShadowHand Sim. 16K 58 300 Optimization DexGraspNet [41] ICRA 2023 ShadowHand Sim. 1.32M 5,355 >200 Optimization UniDexGrasp [47] CVPR 2023 ShadowHand Sim. 1.12M 5,519 >150 Optimization GraspXL [49] ECCV 2024 Diverse Hand Sim - 500K - GraspXL RealDex [19] IJCAI 2024 ShadowHand Real 59K 52 >200 Human Annotation
+Our dataset CVPR 2025 ShadowHand Real+Sim. 3.40M 15,698 >200 DexGrasp Anything + Filter
+4.1. Data Construction
+Our data construction process begins with curating existing datasets from diverse sources. We gather three simulated datasets [15, 41, 47], a real-world dataset [19] collected by human operator, alongside GRAB [40], a largescale human hand dataset, to maximize data diversity and richness. Leveraging advancements in robot teleoperation systems like AnyTeleop [30], we retarget the human hand dataset GRAB to dexterous hand parameters, creating DexGRAB, and filter it to retain only frames with hand-object contact. Next, we examine all collected data within IsaacGym [23], applying strict conditions to ensure stability and contact integrity. Specifically, we enforce that (1) objects do not shift more than 2 cm in any direction under force and that (2) hand-object penetration remains below 10 mm and object-hand penetration remains below 1 mm following [41]. The detailed process for computing the penetration is provided in the supplementary materials. This rigorous filtering process guarantees consistent high quality across all data sources. Training our physics-aware diffusion generator on this dataset leads to higher success rates, greater diversity, and faster generation speeds for zero-shot dexterous grasping on unseen objects. Acting as a data engine, our model facilitates further dataset expansion in a “model-in-the-loop” manner. We meticulously selected object meshes from the Objaverse [2, 3] dataset, with the goal of ensuring broad category coverage and maintaining an even distribution across these categories. To achieve this, we examined all objects within 18 chosen categories and ultimately selected 10,034 distinct objects, covering 6,994 unique tags in the Objaverse data configuration. We apply approximate convex decomposition [42] to each mesh to reduce complexity and ensure water-tightness. Our trained generator then iteratively produces dexterous grasp poses, which are filtered under the same stringent standards. Finally, we combine the curated and generated data to form a large-scale and diverse dataset, crafted to advance research in dexterous grasping.
+4.2. Statistics
+We present a comparative analysis of key metrics between our dataset and other existing datasets in Table 1. Our DGA
+MultiDex RealDex DexGRAB UniDex Dexgraspnet Ours
+Figure 3. t-SNE visualization of the object features in our dataset compared to existing datasets. Each point represents an object, and different markers and colors are used to distinguish between datasets. For clarity, we randomly sample 5% objects from each dataset for visualization.
+dataset comprises two main components: The first component DGA-curated includes approximately 0.88 million grasping poses across 5,664 distinct objects, curated from various existing and diverse data sources. The second component DGA-generated is generated with our DexGrasp Anything generator from the Objaverse [2, 3] dataset, containing approximately 2.52 million grasping poses spanning 10,034 different objects, covering 6,994 unique tags. In total, our dataset features over 3.4 million grasping poses across 15,698 objects from diverse data distribution, supporting in-depth research into dexterous grasping.
+4.3. Characteristics
+Our dataset is characterized by a high degree of diversity and comprehensiveness, aimed at capturing a wide range of object and pose variations to advance the performance of dexterous hands in complex real-world environment. The key characteristics of our dataset can be presented as follow: • Large data scale. Our dataset features over 3.4M strictlytested grasping poses, which is significantly larger than all previous datasets. • Diverse objects. Our dataset encompasses 15,698 objects from a wide range of categories and sources, ensuring a high level of diversity. In Figure 3, we present a t-SNE visualization comparing object features from our dataset with those from existing datasets, using features extracted by a pre-trained Point Transformer. Object features from
+
+
+Table 2. Performance comparison across different methods and datasets. Bold numbers indicate the best scores, while underlined numbers indicate the second-best scores. DexGrasp Anything (w/ LLM) achieves the highest or near-highest performance across most metrics.
+Method
+Dataset DexGraspNet UniDexGrasp MultiDex RealDex DexGRAB
+Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑
+UniDexGrasp [47] 33.9 70.1 31.9 0.14 23.7 65.5 24.5 0.14 21.6 47.5 13.5 0.08 27.1 59.4 39.0 0.11 20.8 55.8 37.4 0.08 GraspTTA [11] 18.6 67.8 24.5 0.13 21.0 65.3 21.2 0.10 30.3 62.8 19.0 0.11 13.3 46.4 40.1 0.09 14.4 51.0 51.4 0.10 SceneDiffuser [10] 26.6 66.9 31.0 0.15 28.3 74.8 25.1 0.15 69.8 85.6 14.6 0.27 21.7 56.1 42.0 0.09 39.1 85.0 41.1 0.12 UGG [21] 46.9 79.0 25.2 0.14 46.0 83.2 24.5 0.14 55.3 93.4 10.3 0.12 32.7 63.4 34.4 0.10 42.7 90.6 33.2 0.12
+Ours 53.6 90.4 21.5 0.22 54.8 90.8 18.9 0.25 72.2 96.3 9.6 0.23 34.6 71.2 23.1 0.14 56.5 91.8 28.6 0.12 Ours(w/ LLM) 57.5 90.6 17.8 0.23 53.1 91.2 18.8 0.23 79.1 98.1 11.4 0.22 44.8 73.7 27.7 0.13 57.9 92.7 30.4 0.13
+our dataset spread much wider across the feature space, suggesting that our dataset captures a broader variety or unique features that not be as present in existing datasets. • Diverse grasping poses. The wide variety of objects contributes to a diverse range of grasping poses. Extensive experimental results in Sec. 5.3 demonstrate that our dataset significantly enhances the diversity of outcomes from existing methods, while maintaining or even improving the grasping success rate.
+5. Experiments
+5.1. Comparison
+Metrics. Following previous works [10], we assess the grasping success rate (Suc. 6/Suc. 1) and maximum penetration (Pen.) in millimeters to gauge the quality of generated poses. A grasping pose is considered successful if the object’s displacement, when an external force is applied, is less than 2 cm in at least one (Suc. 1) or all (Suc. 6) of the six axis-aligned directions in a 3D coordinate system. Additionally, we evaluate the diversity using the mean standard deviation of the pose parameters (Div.) across successful grasps in millimeters. All poses are evaluated in the IssacGym [23] simulator with the same configuration used in [10]. Implementation Details. Following [10], we employ a UNet [34] structure for our diffusion backbone. An objectconditioned Point Transformer [52] encoder handles the point clouds, injected into the diffusion model using a cross-attention mechanism. All point clouds are downsampled to 2048 points before encoding. Our model is implemented using the PyTorch [26] platform, optimized with the Adam [13] algorithm at a learning rate of 0.0001. We follow the official train-test split of all datasets. All the compared methods are trained and inferred following their official code implementations. Training and evaluation are carried out on a Linux server equipped with four NVIDIA Tesla A40 GPUs until convergence. Results. Table 2 presents the quantitative comparisons. Our method, leveraging a physics-aware training paradigm and a physics-guided sampler, demonstrates superior performance in both pose quality (Suc. 1, Suc. 6, and Pen.)
+Table 3. Ablation study on incorporating physical constraints during both training and sampling stages and the LLM module. The evaluation is conducted on the DexGraspNet dataset.
+SRF ERF SPF LLM Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑
+a 26.6 66.9 31.0 0.15 b ✓ 38.9 78.4 27.0 0.03 c ✓ ✓ 46.6 83.4 15.8 0.22 d ✓ ✓ ✓ 53.6 90.4 21.5 0.22 e ✓ ✓ ✓ ✓ 57.5 90.6 17.8 0.23
+f Constraints only in training 46.8 84.0 20.9 0.18
+Figure 4. Qualitative visualization of grasping results in Table 2.
+Figure 5. Visualization of the ablation study. Two rows show different views of each grasp.
+and diversity (Div.) compared to previous methods across all five benchmarks. Qualitative results, shown in Figure 4, further illustrate that our approach produces more accurate grasping poses, benefiting from the effective physical constraints introduced in both training and sampling stages.
+
+
+Table 4. Evaluating Dataset Quality and Cross-Dataset Generalization. Model performance is compared on DexGraspNet and RealDex, with training on either DexGraspNet or our dataset. The best result within each group is highlighted in bold.
+Method Train
+Test DexGraspNet RealDex
+Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑
+SceneDiffuser DexGraspNet 26.6 66.9 31.0 0.15 16.1 52.1 29.2 0.13
+DGA dataset 40.7 70.6 22.2 0.36 24.5 57.1 31.0 0.27
+GraspTTA DexGraspNet 18.6 67.8 24.5 0.13 25.5 64.8 31.6 0.11
+DGA dataset 28.0 73.0 23.9 0.21 32.9 76.2 32.1 0.20
+UGG DexGraspNet 46.9 79.0 25.2 0.14 33.6 74.5 33.0 0.13
+DGA dataset 49.1 85.9 26.2 0.22 42.9 77.3 34.4 0.22
+Ours
+DexGraspNet 53.6 90.4 21.5 0.22 38.4 77.5 19.2 0.17 DGA-curated 55.9 87.3 20.9 0.28 52.6 85.7 21.5 0.25 DGA dataset 58.6 88.5 17.8 0.38 53.4 84.4 22.4 0.32
+5.2. Ablation Study
+In this section, we conduct ablation studies to evaluate the contributions of the proposed physical constraint objectives as well as the LLM-enhanced representation in our DexGrasp Anything generator. These studies are performed on the testing set of the DexGraspNet dataset. The quantitative results are presented in Table 3, where where we incrementally add the three physical constraints and the LLM enhancement (lines a-e) and compare with a model that uses only physical-aware training, excluding the physical-guided sampler (line f). Qualitative results are shown in Figure 5, with additional samples provided in the supplementary materials. These analyses emphasize the crucial role of each physical constraint, the LLM enhancement, as well as the physics-aware training paradigm and physics-guided sampler in enhancing the system’s overall performance.
+5.3. Evaluation for DexGrasp Anything Dataset
+By gathering high-quality data from various existing sources and augmenting it with our physics-aware diffusion generator, we have constructed the largest and most diverse dexterous grasping dataset to date. This not only enhances the performance of our generator but also benefits other dexterous grasp generation methods. Setup. We train our DexGrasp Anything generator, SceneDiffuser, UGG, and GraspTTA on the training sets of both the DexGraspNet and DexGrasp Anything datasets. We evaluate the models on the testing sets of DexGraspNet and RealDex datasets. Results. As shown in Table 4, our findings indicate that training on the DexGrasp Anything dataset significantly improves the diversity of the sampling results for DexGrasp Anything generator, UGG, SceneDiffuser and GraspTTA. This is achieved without compromising, and in some cases improving, the grasping success rate and penetration metrics. To further validate our approach, we provide a more comprehensive evaluation in the supplementary materials. The qualitative comparison results are illustrated in Fig
+Figure 6. Visualization of cross-dataset evaluation results shown in Table 4. The top row shows models trained on DexGraspNet, while the bottom row displays models trained on our dataset.
+Figure 7. Real-world evaluation for our method.
+ure 6. For a variety of target objects, models trained on the DGA dataset generate significantly more diverse grasping poses, while maintaining high-quality results.
+5.4. Real-world Application
+Harnessing physics and semantic priors, and trained on our diverse, high-quality dataset, DexGrasp Anything is highly capable of producing robust and practicable grasping poses in real-world environments. To validate its performance, we deploy the model on a real ShadowHand robot, as shown in Figure 7. The pre-grasping motion sequence is generated following the approach in [19]. The real-world experiments demonstrate that our grasping motions are reasonable and stable for unseen real objects, proving the universality and practicability of our method. More video demos are available in the supplementary materials.
+6. Conclusions
+We introduce DexGrasp Anything, a physics-aware diffusion generator designed for universal and robust dexterous grasp generation. It deeply incorporates three tailored physical constraints through a physics-aware training paradigm and a physics-guided sampler. Moreover, we present the largest and most diverse dataset for dexterous grasp generation to date. Extensive experiments demonstrate that our method and dataset significantly enhance the quality and diversity of dexterous grasp generation. We believe our contributions will pave the way for future advancements towards the universal robotic dexterous grasping.
+
+
+References
+[1] Hyungjin Chung, Jeongsol Kim, Michael T. McCann, Marc Louis Klasky, and J. C. Ye. Diffusion posterior sampling for general noisy inverse problems. ArXiv, abs/2209.14687, 2022. 5 [2] Matt Deitke, Dustin Schwenk, Jordi Salvador, Luca Weihs, Oscar Michel, Eli VanderBilt, Ludwig Schmidt, Kiana Ehsani, Aniruddha Kembhavi, and Ali Farhadi. Objaverse: A universe of annotated 3d objects. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 13142–13153, 2023. 6, 12 [3] Matt Deitke, Ruoshi Liu, Matthew Wallingford, Huong Ngo, Oscar Michel, Aditya Kusupati, Alan Fan, Christian Laforte, Vikram Voleti, Samir Yitzhak Gadre, et al. Objaverse-xl: A universe of 10m+ 3d objects. Advances in Neural Information Processing Systems, 36, 2024. 6, 12
+[4] Prafulla Dhariwal and Alex Nichol. Diffusion models beat gans on image synthesis. ArXiv, abs/2105.05233, 2021. 5 [5] Carlo Ferrari, John F Canny, et al. Planning optimal grasps. In ICRA, page 6, 1992. 1, 2 [6] Yana Hasson, Gul Varol, Dimitrios Tzionas, Igor Kalevatykh, Michael J Black, Ivan Laptev, and Cordelia Schmid. Learning joint reconstruction of hands and manipulated objects. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11807–11816, 2019. 2, 3 [7] Jonathan Ho. Classifier-free diffusion guidance. ArXiv, abs/2207.12598, 2022. 5 [8] Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion probabilistic models. Advances in neural information processing systems, 33:6840–6851, 2020. 2 [9] Rongjie Huang, Jia-Bin Huang, Dongchao Yang, Yi Ren, Luping Liu, Mingze Li, Zhenhui Ye, Jinglin Liu, Xiaoyue Yin, and Zhou Zhao. Make-an-audio: Text-to-audio generation with prompt-enhanced diffusion models. ArXiv, abs/2301.12661, 2023. 2 [10] Siyuan Huang, Zan Wang, Puhao Li, Baoxiong Jia, Tengyu Liu, Yixin Zhu, Wei Liang, and Song-Chun Zhu. Diffusionbased generation, optimization, and planning in 3d scenes. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 16750–16761, 2023. 1, 2, 4, 7, 13 [11] Hanwen Jiang, Shaowei Liu, Jiashun Wang, and Xiaolong Wang. Hand-object contact consistency reasoning for human grasps generation. In Proceedings of the IEEE/CVF international conference on computer vision, pages 11107–11116, 2021. 1, 2, 7 [12] Tero Karras, Miika Aittala, Timo Aila, and Samuli Laine. Elucidating the design space of diffusion-based generative models. Advances in neural information processing systems, 35:26565–26577, 2022. 2 [13] Diederik P Kingma. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980, 2014. 7
+[14] Alexander Kirillov, Eric Mintun, Nikhila Ravi, Hanzi Mao, Chloe Rolland, Laura Gustafson, Tete Xiao, Spencer Whitehead, Alexander C Berg, Wan-Yen Lo, et al. Segment any
+thing. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 4015–4026, 2023. 2
+[15] Puhao Li, Tengyu Liu, Yuyang Li, Yiran Geng, Yixin Zhu, Yaodong Yang, and Siyuan Huang. Gendexgrasp: Generalizable dexterous grasping. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 8068–8074. IEEE, 2023. 2, 3, 6 [16] Haohe Liu, Zehua Chen, Yiitan Yuan, Xinhao Mei, Xubo Liu, Danilo P. Mandic, Wenwu Wang, and MarkD . Plumbley. Audioldm: Text-to-audio generation with latent diffusion models. In International Conference on Machine Learning, 2023. 2 [17] Min Liu, Zherong Pan, Kai Xu, Kanishka Ganguly, and Dinesh Manocha. Deep differentiable grasp planner for highdof grippers. arXiv preprint arXiv:2002.01530, 2020. 1, 2, 3, 6 [18] Tengyu Liu, Zeyu Liu, Ziyuan Jiao, Yixin Zhu, and SongChun Zhu. Synthesizing diverse and physically stable grasps with arbitrary hand structures using differentiable force closure estimator. IEEE Robotics and Automation Letters, 7(1): 470–477, 2021. 1, 2 [19] Yumeng Liu, Yaxun Yang, Youzhuo Wang, Xiaofei Wu, Jiamin Wang, Yichen Yao, So ̈ren Schwertfeger, Sibei Yang, Wenping Wang, Jingyi Yu, et al. Realdex: Towards humanlike grasping for robotic dexterous hand. arXiv preprint arXiv:2402.13853, 2024. 2, 6, 8
+[20] Yixin Liu, Kai Zhang, Yuan Li, Zhiling Yan, Chujie Gao, Ruoxi Chen, Zhengqing Yuan, Yue Huang, Hanchi Sun, Jianfeng Gao, Lifang He, and Lichao Sun. Sora: A review on background, technology, limitations, and opportunities of large vision models. ArXiv, abs/2402.17177, 2024. 2 [21] Jiaxin Lu, Hao Kang, Haoxiang Li, Bo Liu, Yiding Yang, Qixing Huang, and Gang Hua. Ugg: Unified generative grasping. arXiv preprint arXiv:2311.16917, 2023. 1, 2, 7
+[22] Jens Lundell, Francesco Verdoja, and Ville Kyrki. Ddgc: Generative deep dexterous grasping in clutter. IEEE Robotics and Automation Letters, 6(4):6899–6906, 2021. 2, 3 [23] Viktor Makoviychuk, Lukasz Wawrzyniak, Yunrong Guo, Michelle Lu, Kier Storey, Miles Macklin, David Hoeller, Nikita Rudin, Arthur Allshire, Ankur Handa, et al. Isaac gym: High performance gpu-based physics simulation for robot learning. arXiv preprint arXiv:2108.10470, 2021. 3, 6, 7
+[24] Andrew T Miller and Peter K Allen. Graspit! a versatile simulator for robotic grasping. IEEE Robotics & Automation Magazine, 11(4):110–122, 2004. 3 [25] Richard M Murray, Zexiang Li, and S Shankar Sastry. A mathematical introduction to robotic manipulation. CRC press, 2017. 1, 2 [26] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In Advances in Neural Information Processing Systems 32, pages 8024–8035. Curran Associates, Inc., 2019. 7
+
+
+[27] William Peebles and Saining Xie. Scalable diffusion models with transformers. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 4195–4205, 2023. 2 [28] Jean Ponce, Steve Sullivan, J-D Boissonnat, and J-P Merlet. On characterizing and computing three-and four-finger force-closure grasps of polyhedral objects. In [1993] Proceedings IEEE International Conference on Robotics and Automation, pages 821–827. IEEE, 1993. 1, 2 [29] Domenico Prattichizzo, Monica Malvezzi, Marco Gabiccini, and Antonio Bicchi. On the manipulability ellipsoids of underactuated robotic hands with compliance. Robotics and Autonomous Systems, 60(3):337–346, 2012. 1, 2 [30] Yuzhe Qin, Wei Yang, Binghao Huang, Karl Van Wyk, Hao Su, Xiaolong Wang, Yu-Wei Chao, and Dieter Fox. Anyteleop: A general vision-based dexterous robot armhand teleoperation system. In Robotics: Science and Systems, 2023. 3, 6 [31] Aditya Ramesh, Prafulla Dhariwal, Alex Nichol, Casey Chu, and Mark Chen. Hierarchical text-conditional image generation with clip latents. ArXiv, abs/2204.06125, 2022. 2 [32] Xuanchi Ren, Jiahui Huang, Xiaohui Zeng, Ken Museth, Sanja Fidler, and Francis Williams. Xcube (x3): Largescale 3d generative modeling using sparse voxel hierarchies. ArXiv, abs/2312.03806, 2023. 2 [33] Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Bj ̈orn Ommer. High-resolution image synthesis with latent diffusion models. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 10684–10695, 2022. 2 [34] Olaf Ronneberger, Philipp Fischer, and Thomas Brox. Unet: Convolutional networks for biomedical image segmentation. In Medical image computing and computer-assisted intervention–MICCAI 2015: 18th international conference, Munich, Germany, October 5-9, 2015, proceedings, part III 18, pages 234–241. Springer, 2015. 7 [35] Carlos Rosales, Rau ́l Su ́arez, Marco Gabiccini, and Antonio Bicchi. On the synthesis of feasible and prehensile robotic grasps. In 2012 IEEE international conference on robotics and automation, pages 550–556. IEEE, 2012. 1, 2 [36] Chitwan Saharia, William Chan, Saurabh Saxena, Lala Li, Jay Whang, Emily L Denton, Kamyar Ghasemipour, Raphael Gontijo Lopes, Burcu Karagol Ayan, Tim Salimans, et al. Photorealistic text-to-image diffusion models with deep language understanding. Advances in neural information processing systems, 35:36479–36494, 2022. 2 [37] Kenneth Shaw, Shikhar Bahl, and Deepak Pathak. Videodex: Learning dexterity from internet videos. In Conference on Robot Learning, pages 654–665. PMLR, 2023. 3 [38] Aravind Sivakumar, Kenneth Shaw, and Deepak Pathak. Robotic telekinesis: Learning a robotic hand imitator by watching humans on youtube. arXiv preprint arXiv:2202.10448, 2022. 3
+[39] Yang Song, Jascha Sohl-Dickstein, Diederik P Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole. Score-based generative modeling through stochastic differential equations. arXiv preprint arXiv:2011.13456, 2020. 2
+[40] Omid Taheri, Nima Ghorbani, Michael J Black, and Dimitrios Tzionas. Grab: A dataset of whole-body human grasping of objects. In Computer Vision–ECCV 2020: 16th European Conference, Glasgow, UK, August 23–28, 2020, Proceedings, Part IV 16, pages 581–600. Springer, 2020. 2, 6 [41] Ruicheng Wang, Jialiang Zhang, Jiayi Chen, Yinzhen Xu, Puhao Li, Tengyu Liu, and He Wang. Dexgraspnet: A large-scale robotic dexterous grasp dataset for general objects based on simulation. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 1135911366. IEEE, 2023. 2, 3, 6 [42] Xinyue Wei, Minghua Liu, Zhan Ling, and Hao Su. Approximate convex decomposition for 3d meshes with collisionaware concavity and tree search. ACM Transactions on Graphics (TOG), 41(4):1–18, 2022. 6 [43] Yi-Lin Wei, Jian-Jian Jiang, Chengyi Xing, Xiantuo Tan, Xiao-Ming Wu, Hao Li, Mark Cutkosky, and Wei-Shi Zheng. Grasp as you say: Language-guided dexterous grasp generation. arXiv preprint arXiv:2405.19291, 2024. 1, 2, 4
+[44] Zehang Weng, Haofei Lu, Danica Kragic, and Jens Lundell. Dexdiffuser: Generating dexterous grasps with diffusion models. arXiv preprint arXiv:2402.02989, 2024. 2
+[45] Guo-Hao Xu, Yi-Lin Wei, Dian Zheng, Xiao-Ming Wu, and Wei-Shi Zheng. Dexterous grasp transformer. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 17933–17942, 2024. 1, 2, 4 [46] Minkai Xu, Lantao Yu, Yang Song, Chence Shi, Stefano Ermon, and Jian Tang. Geodiff: a geometric diffusion model for molecular conformation generation. ArXiv, abs/2203.02923, 2022. 2 [47] Yinzhen Xu, Weikang Wan, Jialiang Zhang, Haoran Liu, Zikang Shan, Hao Shen, Ruicheng Wang, Haoran Geng, Yijia Weng, Jiayi Chen, et al. Unidexgrasp: Universal robotic dexterous grasping via learning diverse proposal generation and goal-conditioned policy. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 4737–4746, 2023. 1, 2, 3, 4, 6, 7, 13 [48] Lingxiao Yang, Shutong Ding, Yifan Cai, Jingyi Yu, Jingya Wang, and Ye Shi. Guidance with spherical gaussian constraint for conditional diffusion. ArXiv, abs/2402.03201, 2024. 5 [49] Hui Zhang, Sammy Christen, Zicong Fan, Otmar Hilliges, and Jie Song. GraspXL: Generating grasping motions for diverse objects at scale. In European Conference on Computer Vision (ECCV), 2024. 6
+[50] Longwen Zhang, Ziyu Wang, Qixuan Zhang, Qiwei Qiu, Anqi Pang, Haoran Jiang, Wei Yang, Lan Xu, and Jingyi Yu. Clay: A controllable large-scale generative model for creating high-quality 3d assets. ACM Transactions on Graphics (TOG), 43(4):1–20, 2024. 2 [51] Zhengshen Zhang, Lei Zhou, Chenchen Liu, Zhiyang Liu, Chengran Yuan, Sheng Guo, Ruiteng Zhao, Marcelo H Ang Jr, and Francis EH Tay. Dexgrasp-diffusion: Diffusionbased unified functional grasp synthesis pipeline for multidexterous robotic hands. arXiv preprint arXiv:2407.09899, 2024. 1, 2 [52] Hengshuang Zhao, Li Jiang, Jiaya Jia, Philip HS Torr, and Vladlen Koltun. Point transformer. In Proceedings of
+
+
+the IEEE/CVF international conference on computer vision, pages 16259–16268, 2021. 5, 7
+
+
+Appendix
+A. Overview
+In the main text, we introduce DexGrasp Anything, a physics-aware diffusion generator that incorporates three tailored physical constraints for generating dexterous grasps. Along with this, we present the largest and most diverse dataset for dexterous grasp generation to date. To further demonstrate the improvements brought by our method and dataset, this supplementary material provides more comprehensive experimental results (Sec. B) and details the filtering process (Sec. C) used for dataset construction. Additionally, we have included a demo video in the supplementary files that showcases our zero-shot real-world experiments on unseen objects, which we highly recommend reviewing for a deeper understanding of our method’s practical applications and performance.
+Figure 8. Cross-dataset evaluation. Comparison of diversity (bars) and all-direction grasp success rates (triangles/stars/circles) across models trained on different datasets. Trained on single dataset indicates models were trained on the same dataset they are tested on.
+B. Evaluation Results
+B.1. Results for Cross-dataset Evaluation
+We present the comprehensive cross-dataset evaluation result for the DexGrasp Anything diffusion generator on five existing datasets and our dataset, as shown in Table 5 and Figure 8. Qualitative results are presented in Figure 12. The results demonstrate that training on our large-scale, diverse dataset significantly enhances generation diversity while achieving comparable or higher grasping success rates compared to training on the respective original datasets.
+B.2. Qualitative Results for Comparisons
+We provide additional qualitative results comparing DexGrasp Anything with existing state-of-the-art methods in Figure 9.
+Figure 9. Qualitative visualization of comparisons on grasping poses.
+B.3. More Visualizations for Ablation Studies
+We provide additional visualizations for the ablation studies in Figure 10, where we progressively incorporate three physical constraints during the training and sampling process of our diffusion generator. Column (a) represents the baseline, while columns (b), (c), and (d) illustrate the results after incrementally adding the SRF, ERF, and SPF constraints, respectively, to the baseline. Finally, column (e) shows the results after incorporating the LLM-enhancement into the representation extraction module.
+B.4. More Visualizations of Generated Poses
+We present more visualizations of the generated grasping poses by our methods on various challenging objects from [2, 3] in Figure 13 and Figure 14. Our models produce reasonable and stable grasping poses for complex and irregular objects such as a robot model (3rd row, 2nd col in Figure 14) and a loong head (7th row, 3rd col in Figure 14).
+
+
+Table 5. Cross-dataset evaluation results. The bold values indicate the best performance, and the underlined values indicate the second-best performance.
+Testing Dataset DexGraspNet UniDexGrasp MultiDex RealDex DexGRAB
+Training Dataset Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑ Suc.6 ↑ Suc.1 ↑ Pen. ↓ Div ↑
+DexGraspNet 53.6 90.4 21.5 0.22 49.3 82.4 14.9 0.19 55.6 90.1 9.1 0.17 38.4 77.5 19.2 0.17 48.1 84.0 19.7 0.18 UniDexGrasp 45.4 82.4 16.4 0.23 54.8 90.8 18.9 0.25 52.8 90.3 9.4 0.18 38.4 79.3 20.7 0.19 37.5 79.6 20.1 0.19 MultiDex 46.8 83.1 18.1 0.20 43.9 81.3 14.5 0.19 72.2 96.3 9.6 0.23 29.6 69.1 20.1 0.23 52.9 87.9 21.0 0.15 RealDex 47.3 79.5 18.7 0.05 43.8 81.3 15.8 0.04 57.5 89.2 11.6 0.06 34.6 71.2 23.1 0.14 38.5 79.8 22.7 0.08 DexGRAB 41.0 75.8 18.7 0.12 43.9 81.4 14.1 0.10 62.1 90.9 9.3 0.11 35.2 71.5 24.0 0.11 56.5 91.8 28.6 0.12
+DGA-curated(ours) 55.9 87.3 20.9 0.28 50.5 84.6 14.0 0.28 68.7 95.9 12.5 0.21 52.6 85.7 21.5 0.25 52.5 89.0 22.9 0.26 DGA(ours) 58.6 88.5 17.8 0.38 56.9 86.7 16.7 0.37 68.8 96.9 9.5 0.25 53.4 84.4 22.4 0.32 58.3 90.2 23.2 0.31
+Figure 10. Visualizations of the ablation study. Each pair(row 1-2, 3-4, 5-6) of rows corresponds to the different views of the same grasp for the same object.
+C. Implementation details
+We rigorously evaluated each grasp pose in our dataset to ensure that the object is held firmly without significant penetration. For hand-object penetration computation, we employ two approaches. The first approach, adopted by [10] and also used in the External-penetration Repulsion Force, calculates the Euclidean distance between each hand point and its nearest neighbor on the object surface. The second approach, introduced by [47], transforms the object and each robot hand link into the local hand coordinate system based on the robot’s configuration. For the palm, penetration is measured as the signed distance between the sampled object points and the mesh surface of the palm, represented
+Figure 11. Visualization of failed cases.
+by a signed distance field. For each phalange link, it is approximated as cylinders, and object points are projected onto the cylinders’ bounding volumes to compute signed distances, adjusted using a mask to differentiate internal and external points. We combine both methods to enforce strict filtering conditions for our dataset.
+D. Limitations and Future Works
+As shown in Figure 11, we notice that our method produces sub-optimal poses with obvious penetration for objects with extremely thin shapes(e.g. masks, plates etc.). To address these challenges, enhancing affordance modeling or integrating tactile feedback into the robotic grasping system would be promising directions for future works.
+
+
+Figure 12. Visualization of cross-dataset evaluation results. The top row shows models trained on single dataset,while the bottom row displays models trained on our dataset.
+
+
+Figure 13. Visualization of our method’s results.
+
+
+Figure 14. Visualization of our method’s results.

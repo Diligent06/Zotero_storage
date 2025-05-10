@@ -1,0 +1,59 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2503.06227 (cs)
+[Submitted on 8 Mar 2025]
+GAT-Grasp: Gesture-Driven Affordance Transfer for Task-Aware Robotic Grasping
+Ruixiang Wang, Huayi Zhou, Xinyue Yao, Guiliang Liu, Kui Jia
+View PDF
+HTML (experimental)
+Achieving precise and generalizable grasping across diverse objects and environments is essential for intelligent and collaborative robotic systems. However, existing approaches often struggle with ambiguous affordance reasoning and limited adaptability to unseen objects, leading to suboptimal grasp execution. In this work, we propose GAT-Grasp, a gesture-driven grasping framework that directly utilizes human hand gestures to guide the generation of task-specific grasp poses with appropriate positioning and orientation. Specifically, we introduce a retrieval-based affordance transfer paradigm, leveraging the implicit correlation between hand gestures and object affordances to extract grasping knowledge from large-scale human-object interaction videos. By eliminating the reliance on pre-given object priors, GAT-Grasp enables zero-shot generalization to novel objects and cluttered environments. Real-world evaluations confirm its robustness across diverse and unseen scenarios, demonstrating reliable grasp execution in complex task settings.
+Comments:	under review
+Subjects:	Robotics (cs.RO)
+Cite as:	arXiv:2503.06227 [cs.RO]
+ 	(or arXiv:2503.06227v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2503.06227
+Focus to learn more
+Submission history
+From: Ruixiang Wang [view email]
+[v1] Sat, 8 Mar 2025 14:03:57 UTC (3,985 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2025-03
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

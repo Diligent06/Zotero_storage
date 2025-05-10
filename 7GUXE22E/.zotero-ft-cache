@@ -1,0 +1,61 @@
+Skip to main content
+Computer Science > Computer Vision and Pattern Recognition
+arXiv:2409.11750 (cs)
+[Submitted on 18 Sep 2024]
+Neural Encoding for Image Recall: Human-Like Memory
+Virgile Foussereau, Robin Dumas
+View PDF
+HTML (experimental)
+Achieving human-like memory recall in artificial systems remains a challenging frontier in computer vision. Humans demonstrate remarkable ability to recall images after a single exposure, even after being shown thousands of images. However, this capacity diminishes significantly when confronted with non-natural stimuli such as random textures. In this paper, we present a method inspired by human memory processes to bridge this gap between artificial and biological memory systems. Our approach focuses on encoding images to mimic the high-level information retained by the human brain, rather than storing raw pixel data. By adding noise to images before encoding, we introduce variability akin to the non-deterministic nature of human memory encoding. Leveraging pre-trained models' embedding layers, we explore how different architectures encode images and their impact on memory recall. Our method achieves impressive results, with 97% accuracy on natural images and near-random performance (52%) on textures. We provide insights into the encoding process and its implications for machine learning memory systems, shedding light on the parallels between human and artificial intelligence memory mechanisms.
+Comments:	5 pages, 7 figures
+Subjects:	Computer Vision and Pattern Recognition (cs.CV)
+MSC classes:	68T07, 68U10
+ACM classes:	I.4.10; I.2.6; I.5.1
+Cite as:	arXiv:2409.11750 [cs.CV]
+ 	(or arXiv:2409.11750v1 [cs.CV] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2409.11750
+Focus to learn more
+Submission history
+From: Virgile Foussereau [view email]
+[v1] Wed, 18 Sep 2024 07:09:19 UTC (5,355 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.CV
+< prev next >
+
+newrecent2024-09
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

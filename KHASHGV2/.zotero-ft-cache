@@ -1,0 +1,58 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2411.12286 (cs)
+[Submitted on 19 Nov 2024]
+GLOVER: Generalizable Open-Vocabulary Affordance Reasoning for Task-Oriented Grasping
+Teli Ma, Zifan Wang, Jiaming Zhou, Mengmeng Wang, Junwei Liang
+View PDF
+HTML (experimental)
+Inferring affordable (i.e., graspable) parts of arbitrary objects based on human specifications is essential for robots advancing toward open-vocabulary manipulation. Current grasp planners, however, are hindered by limited vision-language comprehension and time-consuming 3D radiance modeling, restricting real-time, open-vocabulary interactions with objects. To address these limitations, we propose GLOVER, a unified Generalizable Open-Vocabulary Affordance Reasoning framework, which fine-tunes the Large Language Models (LLMs) to predict visual affordance of graspable object parts within RGB feature space. We compile a dataset of over 10,000 images from human-object interactions, annotated with unified visual and linguistic affordance labels, to enable multi-modal fine-tuning. GLOVER inherits world knowledge and common-sense reasoning from LLMs, facilitating more fine-grained object understanding and sophisticated tool-use reasoning. To enable effective real-world deployment, we present Affordance-Aware Grasping Estimation (AGE), a non-parametric grasp planner that aligns the gripper pose with a superquadric surface derived from affordance data. In evaluations across 30 real-world scenes, GLOVER achieves success rates of 86.0% in part identification and 76.3% in grasping, with speeds approximately 330 times faster in affordance reasoning and 40 times faster in grasping pose estimation than the previous state-of-the-art.
+Subjects:	Robotics (cs.RO); Computer Vision and Pattern Recognition (cs.CV)
+Cite as:	arXiv:2411.12286 [cs.RO]
+ 	(or arXiv:2411.12286v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2411.12286
+Focus to learn more
+Submission history
+From: Teli Ma [view email]
+[v1] Tue, 19 Nov 2024 07:12:48 UTC (13,956 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2024-11
+Change to browse by: cs cs.CV
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

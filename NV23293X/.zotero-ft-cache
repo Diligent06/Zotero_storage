@@ -1,0 +1,58 @@
+Skip to main content
+Computer Science > Computation and Language
+arXiv:2504.05411 (cs)
+[Submitted on 7 Apr 2025]
+Less but Better: Parameter-Efficient Fine-Tuning of Large Language Models for Personality Detection
+Lingzhi Shen, Yunfei Long, Xiaohao Cai, Guanming Chen, Imran Razzak, Shoaib Jameel
+View PDF
+HTML (experimental)
+Personality detection automatically identifies an individual's personality from various data sources, such as social media texts. However, as the parameter scale of language models continues to grow, the computational cost becomes increasingly difficult to manage. Fine-tuning also grows more complex, making it harder to justify the effort and reliably predict outcomes. We introduce a novel parameter-efficient fine-tuning framework, PersLLM, to address these challenges. In PersLLM, a large language model (LLM) extracts high-dimensional representations from raw data and stores them in a dynamic memory layer. PersLLM then updates the downstream layers with a replaceable output network, enabling flexible adaptation to various personality detection scenarios. By storing the features in the memory layer, we eliminate the need for repeated complex computations by the LLM. Meanwhile, the lightweight output network serves as a proxy for evaluating the overall effectiveness of the framework, improving the predictability of results. Experimental results on key benchmark datasets like Kaggle and Pandora show that PersLLM significantly reduces computational cost while maintaining competitive performance and strong adaptability.
+Subjects:	Computation and Language (cs.CL); Machine Learning (cs.LG)
+Cite as:	arXiv:2504.05411 [cs.CL]
+ 	(or arXiv:2504.05411v1 [cs.CL] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2504.05411
+Focus to learn more
+Submission history
+From: Lingzhi Shen [view email]
+[v1] Mon, 7 Apr 2025 18:30:39 UTC (2,039 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.CL
+< prev next >
+
+newrecent2025-04
+Change to browse by: cs cs.LG
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack
