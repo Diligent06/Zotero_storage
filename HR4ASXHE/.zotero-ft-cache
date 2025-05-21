@@ -1,0 +1,62 @@
+Skip to main content
+Computer Science > Computer Vision and Pattern Recognition
+arXiv:2502.00379 (cs)
+[Submitted on 1 Feb 2025 (v1), last revised 20 May 2025 (this version, v4)]
+Latent Action Learning Requires Supervision in the Presence of Distractors
+Alexander Nikulin, Ilya Zisman, Denis Tarasov, Nikita Lyubaykin, Andrei Polubarov, Igor Kiselev, Vladislav Kurenkov
+View PDF
+HTML (experimental)
+Recently, latent action learning, pioneered by Latent Action Policies (LAPO), have shown remarkable pre-training efficiency on observation-only data, offering potential for leveraging vast amounts of video available on the web for embodied AI. However, prior work has focused on distractor-free data, where changes between observations are primarily explained by ground-truth actions. Unfortunately, real-world videos contain action-correlated distractors that may hinder latent action learning. Using Distracting Control Suite (DCS) we empirically investigate the effect of distractors on latent action learning and demonstrate that LAPO struggle in such scenario. We propose LAOM, a simple LAPO modification that improves the quality of latent actions by 8x, as measured by linear probing. Importantly, we show that providing supervision with ground-truth actions, as few as 2.5% of the full dataset, during latent action learning improves downstream performance by 4.2x on average. Our findings suggest that integrating supervision during Latent Action Models (LAM) training is critical in the presence of distractors, challenging the conventional pipeline of first learning LAM and only then decoding from latent to ground-truth actions.
+Comments:	ICML 2025, Poster, Source code: this https URL
+Subjects:	Computer Vision and Pattern Recognition (cs.CV); Artificial Intelligence (cs.AI); Machine Learning (cs.LG)
+Cite as:	arXiv:2502.00379 [cs.CV]
+ 	(or arXiv:2502.00379v4 [cs.CV] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2502.00379
+Focus to learn more
+Submission history
+From: Alexander Nikulin [view email]
+[v1] Sat, 1 Feb 2025 09:35:51 UTC (9,763 KB)
+[v2] Wed, 19 Mar 2025 20:57:58 UTC (9,763 KB)
+[v3] Sat, 17 May 2025 19:34:01 UTC (10,847 KB)
+[v4] Tue, 20 May 2025 13:10:54 UTC (11,026 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.CV
+< prev next >
+
+newrecent2025-02
+Change to browse by: cs cs.AI cs.LG
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack
