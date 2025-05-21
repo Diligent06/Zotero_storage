@@ -1,0 +1,178 @@
+EMMOE: A Comprehensive Benchmark for Embodied Mobile Manipulation in Open Environments
+
+Autonomous household robots driven by user instructions.
+
+Dongping Li1,2*† , Tielong Cai1*, Tianci Tang1*, Wenhao Chai3,
+Katherine Rose Driggs-Campbell2, Gaoang Wang1
+1Zhejiang University 2University of Illinois Urbana-Champaign 3University of Washington
+
+
+*Equal Contribution †Project Lead
+
+Paper
+ 
+arXiv
+ 
+Code
+ 
+Model
+ 
+Data
+Full Video
+Abstract
+
+Problem: Developing autonomous home robots controlled by natural language has long been a pursuit of human. While advancements in large language models (LLMs) and embodied intelligence make this goal closer, several challenges persist: 1) the lack of a unified benchmark for more complex robot tasks. 2) limited evaluation methods and metrics. 3) data incompatibility between LLMs and mobile manipulation trajectories.
+
+EMMOE: Embodied Mobile Manipulation in Open Environments (EMMOE) requires robots to explore environments and perform various open-vocabulary mobile manipulation tasks based solely on language instructions and sensor observations.
+
+Method: We collect EMMOE-100, the first daily task dataset featuring Chain-of Thought (CoT) outputs, diverse task designs, detailed re-plan processes, SFT and Direct Preference Optimization (DPO) sub-datasets for LLM training. Additionally, we propose three new metrics for more overall assessment. Furthermore, we design HomieBot, a sophisticated agent system consists of LLM with DPO, light navigation and manipulation models, multiple error detection and adaptation mechanisms.
+
+Evaluation: We demonstrate how to construct new datasets based on EMMOE-100. Besides, we show HomieBot's performance and evaluations of different models and policies. Finally, we provide in-depth result analysis, visualizations, and case study.
+
+EMMOE Benchmark
+EMMOE-100
+
+Data Collection. We design 100 daily mobile manipulation tasks based on different episodes from Replica Challenge. To enhance task diversity and better align with human demands, there are five different task attributes, and one task can possess multiple attributes simultaneously. Then, we manually control a Fetch robot in Habitat-Lab 2.0 to complete all tasks and decompose trajectories into discrete subtasks. Each subtask consists of a pre-defined action, a target, and a low-level model selection.
+
+Dataset Features. All subtasks are annotated with four first-person view images and detailed reasoning processes. Moreover, we intentionally design some failed subtasks and provide corresponding re-plans to enhance dataset robustness. A key feature of EMMOE-100 is the emphasis on the reasoning process and interleaved execution. In the shown task, the agent must check the fridge first. Otherwise, even if the agent finally gets a banana from the kitchen, it will not be considered as a success.
+
+Task Attributes
+Task example
+Data Augmentation
+
+SFT Augmentation. Initially, all failed subtasks will be skipped as they are treated as junk data for the SFT dataset. Then we use GPT-4o to rewrite text descriptions of tasks and the analysis of each subtask for three times.
+
+DPO Augmentation. For the i-th subtask and its input instruction Ii, if the execution of output Oi fails but the next output Oi+1 succeeds after re-plan, we will choose Ii as the prompt, Oi as the rejected and Oi+1 as the chosen. To obtain more data, we utilize following augmentation methods: 1) Order Change: shuffle the order of successful subtasks, treat successful output Oi as chosen and Oi+1 as rejected. 2) Action Change: replace actions in subtasks with non-standard names or actions outside the available list. 3) Model Change: replace the model choice with models of the same type in the model list.
+
+We also provide all data transformation and augmentation scripts here.
+
+New Metrics
+Task Progress (TP)
+Success End Rate (SER)
+Success Re-plan Rate (SRR)
+
+Execution failures are common cases in the real world, especially in unfamiliar environments, which makes the ability to quickly adjust from failures and continuously adapt to new environments a crucial skill. To measure the adaptation and generalization abilities of the agent, we propose Success Re-plan Rate (SRR), which is calculated as follows:
+
+S
+R
+R
+=
+∑
+t
+∈
+S
+count
+t
+(
+replan
+)
+∑
+t
+∈
+M
+count
+t
+(
+replan
+)
+SRR=∑t∈Scountt(replan)∑t∈Mcountt(replan)
+
+countt(replan) is the number of re-plans in trajectory t. Other symbol definitions are the same as SER. SRR represents the effectiveness of re-planning and adaptability of the agent. When SRR reaches 100%, it indicates that the agent can adapt to all failures and then successfully complete the task.
+
+HomieBot
+System
+
+HomieBot employs a hierarchical framework with communication mechanisms for interleaved execution. High-Level Planning (HLP) deals with embodied decision making and planning adaptation, while Low-Level Execution (LLE) handles continuous execution and provides feedback to HLP.
+
+Overview of HomieBot.
+
+To facilitate communication with HLP and provide more detailed error information, we further classify common errors into four main types and several subtypes. 1) Logical error. L1: The agent's hands are already full but still attempts to pick/open/close; L2: The agent holds nothing but attempts to put; L3: The agent attempts to pick/put the object in a closed container; L4: The agent attempts to interact with a non-interactive object. 2) Distance error. D1: The agent stands too far and is unable to reach the target; D2: The agent is too close to the target and its arm is hindered from properly extending during interaction. 3) Format Error. F1: The output action or model is not in the available list; F2: The output target does not exist in the current scene or can not be recognized by low-level models. 4) Execution Error. E1: The limited capabilities of the low-level models or policies cause the failure; E2: Failed execution may result in the inventory information being accidentally updated.
+
+Training
+
+We select 90 tasks from EMMOE-100, then we select Video-LLaVA-7B as our base model and conduct a two-stage training process. In the first stage, we fine-tune the base model. In the second stage, we align the fine-tuned model with DPO.
+
+Experiments
+Settings
+
+Metrics. In addition to SR, TP, SER and SRR, we also choose Path Length Weighted SR (PLWSR) as one of our evaluation metrics. PLWSR measures the ability gap between the agent and the expert in successful trajectories.
+
+Baselines. We select GPT-4o, Gemini-1.5-Pro, Qwen2-VL-7B and MiniCPM-V 2.6 as baseline high-level planners. By leveraging in-context learning abilities and minor adaptations, these models can be easily deployed in our system. For low-level executor, we extract individual skills from M3, modify their implementations, and pass environmental information between executions to ensure environmental consistency. Additionally, robotic arms will be reset after each execution to enhance the success rate.
+
+Evaluation Benchmarks. All EMMOE-100 tasks will be used for evaluation, the remaining ten untrained tasks will serve as test set. Each task will be executed three times with a maximum step limit of 20 each time, the average results will be used for the final calculation. (!Note: we report the average success rate of a trajectory, rather than the number of tasks can be completed.)
+
+Results
+Performance comparison of different models on EMMOE-100 tasks.
+Model	SR	PLWSR	TP	SRR	SER
+GPT-4o	13.33	10.51	29.79	3.57	49.38
+Gemini-1.5-Pro	17.33	14.79	38.03	3.39	55.91
+Qwen2-VL-7B	1.00	0.50	16.55	0.59	25.00
+MiniCPM-V 2.6	0.67	0.57	14.45	0.06	40.00
+HomieBot-7B (SFT)	27.67	20.88	50.27	9.23	53.90
+HomieBot-7B (SFT+DPO)	30.30	24.66	51.39	8.72	60.81
+Performance comparison of HomieBot on the training and test split.
+Model	Train split	Test split
+SR	PLWSR	TP	SRR	SER	SR	PLWSR	TP	SRR	SER
+HomieBot (SFT)	28.52	21.49	50.16	9.59	53.85	20.00	15.36	51.19	6.55	54.55
+HomieBot (SFT+DPO)	31.84	25.82	52.29	9.69	60.71	16.67	14.36	43.39	3.08	62.50
+
+Empirical Findings
+
+Open-source models in similar size are struggling to complete EMMOE tasks without additional training.
+The performance improvement in SER is not so obvious. The strong commonsense and reasoning capabilities of GPT-4o and Gemini-1.5-Pro enable them to effectively decide when to end a trajectory.
+SFT version outperforms DPO version in SRR, reflecting that DPO may compromise the model's generalization and transferability.
+Observations in comparisons of different splits further confirm that DPO introduces generalization issues.
+SER is more related to the model's inherent ability, and remains stable for both versions across the training and test splits.
+Visible Pipeline
+
+After each trial, HomieBot will automatically save trajectory videos in different views. To make the entire pipeline more intuitive, we demonstrate raw experimental videos of three tasks. The first two tasks are executed by SFT version, and the third is executed by DPO version.
+
+Trial 1
+Trial 2
+Trial 3
+More Analysis and Evaluations
+Error Analysis
+
+To further explore the reasons for the overall low success rate and demonstrate how HomieBot can be used to simultaneously evaluate both HLP and LLE, we collect all errors occurred during experiments and conduct an in-depth analysis.
+
+Error Statistics. The left and right figures depict the proportion of each error type of each model in successful and failed trajectories respectively. Additionally, we indicate the proportion of total execution failures next to each model's name. Due to too few successful trajectories for Qwen2-VL and MiniCPM-V 2.6, their results will not be shown in the left figure.
+
+Empirical Findings
+
+The primary obstructive factors are physical grounding failures and model hallucinations.
+LMM-trainable format data is significan, a small amount of data combined with our data augmentation methods can efficiently improve grounding issues.
+When the model's understanding ability is insufficient, it may fail to fully understand or even forget previous execution contents, ultimately resulting in meaningless outputs.
+Insufficiency of model's spatial perception ability can be amended through feedback information.
+LLE Evaluation
+
+Comprehensive error types allow us to evaluate HLP and LLE separately. We further classify Execution Errors based on action types and count total occurrences of each action. It is evident that Pick action has a significantly lower success rate and the highest proportion of execution errors compared to other actions.
+
+Results of LLE evaluations. P represents the proportion of single action errors. SR here represents an average value as each skill is attempted up to three times per execution.
+Metrics	Go to	Pick	Place	Open	Close
+P	38.49	49.77	7.30	3.32	1.11
+SR	45.32	22.45	40.97	43.13	36.45
+Task Performance
+
+We also evaluate SR for each type of task. Short-Horizon tasks are relatively easy due to straightforward processes and fewer overall steps. The most challenging are Open-Ended tasks, which usually have a very long total step count, with flexible processes and results, demanding powerful capabilities from both HLP and LLE models.
+
+Average success rate for each type of task.
+Model	Short-Horizon	Long-Horizon	Open-Ended	Logical	Human-Style
+HomieBot (SFT)	43.75	24.60	18.52	34.01	25.24
+HomieBot (SFT+DPO)	41.67	28.11	15.38	35.86	27.88
+Case Study
+
+Here we show a successful trajectory of our HomieBot (DPO version). To facilitate understanding, we convert the dialogue data into the original EMMOE data format. As shown, even if errors occur, timely adjustments can be made through feedback, ensuring the correctness of the execution process.
+
+BibTeX
+  @misc{li2025emmoecomprehensivebenchmarkembodied,
+    title={EMMOE: A Comprehensive Benchmark for Embodied Mobile Manipulation in Open Environments}, 
+    author={Dongping Li and Tielong Cai and Tianci Tang and Wenhao Chai and Katherine Rose Driggs-Campbell and Gaoang Wang},
+    year={2025},
+    eprint={2503.08604},
+    archivePrefix={arXiv},
+    primaryClass={cs.RO},
+    url={https://arxiv.org/abs/2503.08604}
+  }
+        
+
+Website template borrowed from NeRFies

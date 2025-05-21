@@ -1,0 +1,60 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2410.18835 (cs)
+[Submitted on 24 Oct 2024]
+Diffusion for Multi-Embodiment Grasping
+Roman Freiberg, Alexander Qualmann, Ngo Anh Vien, Gerhard Neumann
+View PDF
+HTML (experimental)
+Grasping is a fundamental skill in robotics with diverse applications across medical, industrial, and domestic domains. However, current approaches for predicting valid grasps are often tailored to specific grippers, limiting their applicability when gripper designs change. To address this limitation, we explore the transfer of grasping strategies between various gripper designs, enabling the use of data from diverse sources. In this work, we present an approach based on equivariant diffusion that facilitates gripper-agnostic encoding of scenes containing graspable objects and gripper-aware decoding of grasp poses by integrating gripper geometry into the model. We also develop a dataset generation framework that produces cluttered scenes with variable-sized object heaps, improving the training of grasp synthesis methods. Experimental evaluation on diverse object datasets demonstrates the generalizability of our approach across gripper architectures, ranging from simple parallel-jaw grippers to humanoid hands, outperforming both single-gripper and multi-gripper state-of-the-art methods.
+Comments:	8 pages
+Subjects:	Robotics (cs.RO)
+ACM classes:	I.2.9
+Cite as:	arXiv:2410.18835 [cs.RO]
+ 	(or arXiv:2410.18835v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2410.18835
+Focus to learn more
+Submission history
+From: Roman Freiberg [view email]
+[v1] Thu, 24 Oct 2024 15:20:16 UTC (10,421 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2024-10
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

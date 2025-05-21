@@ -1,0 +1,59 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2406.11142 (cs)
+[Submitted on 17 Jun 2024]
+Graspness Discovery in Clutters for Fast and Accurate Grasp Detection
+Chenxi Wang, Hao-Shu Fang, Minghao Gou, Hongjie Fang, Jin Gao, Cewu Lu
+View PDF
+HTML (experimental)
+Efficient and robust grasp pose detection is vital for robotic manipulation. For general 6 DoF grasping, conventional methods treat all points in a scene equally and usually adopt uniform sampling to select grasp candidates. However, we discover that ignoring where to grasp greatly harms the speed and accuracy of current grasp pose detection methods. In this paper, we propose "graspness", a quality based on geometry cues that distinguishes graspable areas in cluttered scenes. A look-ahead searching method is proposed for measuring the graspness and statistical results justify the rationality of our method. To quickly detect graspness in practice, we develop a neural network named cascaded graspness model to approximate the searching process. Extensive experiments verify the stability, generality and effectiveness of our graspness model, allowing it to be used as a plug-and-play module for different methods. A large improvement in accuracy is witnessed for various previous methods after equipping our graspness model. Moreover, we develop GSNet, an end-to-end network that incorporates our graspness model for early filtering of low-quality predictions. Experiments on a large-scale benchmark, GraspNet-1Billion, show that our method outperforms previous arts by a large margin (30+ AP) and achieves a high inference speed. The library of GSNet has been integrated into AnyGrasp, which is at this https URL.
+Comments:	ICCV 2021
+Subjects:	Robotics (cs.RO); Computer Vision and Pattern Recognition (cs.CV)
+Cite as:	arXiv:2406.11142 [cs.RO]
+ 	(or arXiv:2406.11142v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2406.11142
+Focus to learn more
+Submission history
+From: Chenxi Wang [view email]
+[v1] Mon, 17 Jun 2024 02:06:47 UTC (13,521 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2024-06
+Change to browse by: cs cs.CV
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

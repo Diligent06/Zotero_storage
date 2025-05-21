@@ -1,0 +1,73 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:1809.06267 (cs)
+[Submitted on 17 Sep 2018 (v1), last revised 18 Feb 2019 (this version, v4)]
+PointNetGPD: Detecting Grasp Configurations from Point Sets
+Hongzhuo Liang, Xiaojian Ma, Shuang Li, Michael Görner, Song Tang, Bin Fang, Fuchun Sun, Jianwei Zhang
+View PDF
+In this paper, we propose an end-to-end grasp evaluation model to address the challenging problem of localizing robot grasp configurations directly from the point cloud. Compared to recent grasp evaluation metrics that are based on handcrafted depth features and a convolutional neural network (CNN), our proposed PointNetGPD is lightweight and can directly process the 3D point cloud that locates within the gripper for grasp evaluation. Taking the raw point cloud as input, our proposed grasp evaluation network can capture the complex geometric structure of the contact area between the gripper and the object even if the point cloud is very sparse. To further improve our proposed model, we generate a larger-scale grasp dataset with 350k real point cloud and grasps with the YCB object set for training. The performance of the proposed model is quantitatively measured both in simulation and on robotic hardware. Experiments on object grasping and clutter removal show that our proposed model generalizes well to novel objects and outperforms state-of-the-art methods. Code and video are available at \href{this https URL}{this https URL}
+Comments:	Accepted to ICRA 2019. Hongzhuo Liang and Xiaojian Ma contributed equally to this work
+Subjects:	Robotics (cs.RO)
+Cite as:	arXiv:1809.06267 [cs.RO]
+ 	(or arXiv:1809.06267v4 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.1809.06267
+Focus to learn more
+
+Related DOI:	
+https://doi.org/10.1109/ICRA.2019.8794435
+Focus to learn more
+Submission history
+From: Xiaojian Ma [view email]
+[v1] Mon, 17 Sep 2018 15:02:52 UTC (3,820 KB)
+[v2] Tue, 18 Sep 2018 00:26:38 UTC (3,820 KB)
+[v3] Fri, 2 Nov 2018 20:21:43 UTC (3,820 KB)
+[v4] Mon, 18 Feb 2019 14:59:48 UTC (2,812 KB)
+
+Access Paper:
+View PDFTeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2018-09
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+DBLP - CS Bibliography
+listing | bibtex
+Hongzhuo Liang
+Xiaojian Ma
+Shuang Li
+Michael Görner
+Song Tang
+…
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack

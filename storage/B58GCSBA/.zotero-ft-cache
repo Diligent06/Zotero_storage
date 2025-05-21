@@ -1,0 +1,59 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2502.16976 (cs)
+[Submitted on 24 Feb 2025]
+Task-Oriented 6-DoF Grasp Pose Detection in Clutters
+An-Lan Wang, Nuo Chen, Kun-Yu Lin, Li Yuan-Ming, Wei-Shi Zheng
+View PDF
+HTML (experimental)
+In general, humans would grasp an object differently for different tasks, e.g., "grasping the handle of a knife to cut" vs. "grasping the blade to hand over". In the field of robotic grasp pose detection research, some existing works consider this task-oriented grasping and made some progress, but they are generally constrained by low-DoF gripper type or non-cluttered setting, which is not applicable for human assistance in real life. With an aim to get more general and practical grasp models, in this paper, we investigate the problem named Task-Oriented 6-DoF Grasp Pose Detection in Clutters (TO6DGC), which extends the task-oriented problem to a more general 6-DOF Grasp Pose Detection in Cluttered (multi-object) scenario. To this end, we construct a large-scale 6-DoF task-oriented grasping dataset, 6-DoF Task Grasp (6DTG), which features 4391 cluttered scenes with over 2 million 6-DoF grasp poses. Each grasp is annotated with a specific task, involving 6 tasks and 198 objects in total. Moreover, we propose One-Stage TaskGrasp (OSTG), a strong baseline to address the TO6DGC problem. Our OSTG adopts a task-oriented point selection strategy to detect where to grasp, and a task-oriented grasp generation module to decide how to grasp given a specific task. To evaluate the effectiveness of OSTG, extensive experiments are conducted on 6DTG. The results show that our method outperforms various baselines on multiple metrics. Real robot experiments also verify that our OSTG has a better perception of the task-oriented grasp points and 6-DoF grasp poses.
+Comments:	Accepted to ICRA 2025
+Subjects:	Robotics (cs.RO); Computer Vision and Pattern Recognition (cs.CV)
+Cite as:	arXiv:2502.16976 [cs.RO]
+ 	(or arXiv:2502.16976v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2502.16976
+Focus to learn more
+Submission history
+From: An-Lan Wang [view email]
+[v1] Mon, 24 Feb 2025 09:05:22 UTC (2,323 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX SourceOther Formats
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2025-02
+Change to browse by: cs cs.CV
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 
+Get status notifications via email or slack
