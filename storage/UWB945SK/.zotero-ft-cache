@@ -1,0 +1,300 @@
+GraspVLA: a Grasping Foundation Model Pre-trained on Billion-scale Synthetic Action Data
+Shengliang Deng∗,1,3 Mi Yan∗,1,2 Songlin Wei1,2 Haixin Ma1 Yuxin Yang1 Jiayi Chen1,2 Zhiqi Zhang1,2 Taoyu Yang2 Xuheng Zhang2 Heming Cui3 Zhizheng Zhang†,1,4 He Wang†,1,2,4
+SynGrasp-1B Action Data
+Internet Grounding Data
+Background Generalization
+Spatial Generalization
+Category Generalization
+Distractor Generalization
+Closed-loop
+Lighting Generalization
+Specialized Scenarios Aligned with Human Preference
+Pre-training
+Post Training
+Figure 1: GraspVLA is a grasping foundation model pre-trained exclusively on billion-scale synthetic action data and co-trained with Internet semantics data. It exhibits direct sim-to-real transfer and strong zero-shot generalization across diverse aspects, as well as few-shot adaptability to specialized scenarios and human preferences.
+Abstract: Embodied foundation models are gaining increasing attention for their zero-shot generalization, scalability, and adaptability to new tasks through few-shot post-training. However, existing models rely heavily on real-world data, which is costly and labor-intensive to collect. Synthetic data offers a cost-effective alternative, yet its potential remains largely underexplored. To bridge this gap, we explore the feasibility of training Vision-Language-Action (VLA) models entirely with large-scale synthetic action data. We curate SynGrasp-1B, a billion-frame robotic grasping dataset generated in simulation with photorealistic rendering and extensive domain randomization. Building on this, we present GraspVLA, a VLA model pretrained on large-scale synthetic action data as a foundational model for grasping tasks. GraspVLA integrates autoregressive perception tasks and flowmatching-based action generation into a unified Chain-of-Thought process, enabling joint training on synthetic action data and Internet semantics data. This design helps mitigate sim-to-real gaps and facilitates the transfer of learned actions to a broader range of Internet-covered objects, achieving open-vocabulary generalization in grasping. Extensive evaluations across real-world and simulation benchmarks demonstrate GraspVLA’s advanced zero-shot generalizability and few-shot adaptability to specific human preferences. We will release SynGrasp
+∗ denotes equal contribution. † denotes corresponding authors.
+Correspondence to zhangzz@galbot.com, hewang@pku.edu.cn.
+1Galbot, 2Peking University, 3The University of Hong Kong, 4Beijing Academy of Artificial Intelligence
+arXiv:2505.03233v1 [cs.RO] 6 May 2025
+
+
+1B dataset and pre-trained weights to benefit the community. Our project page is at https://pku-epic.github.io/GraspVLA-web. Keywords: Vision-Language-Action, Large-scale Robot Learning, Grasping
+1 Introduction
+The fields of Natural Language Processing (NLP) and Computer Vision (CV) have undergone a paradigm shift with the advent of foundation models. Large-scale models pretrained on vast amounts of Internet data exhibit zero-shot generalization to unseen scenarios [1, 2, 3] and few-shot adaptation for aligning with human preferences [4]. Inspired by this success, the foundation model for actions in the physical world has recently been introduced in Vision-Language-Action (VLA) models [5, 6, 7, 8]. These models process robotic visual observations and human instructions to directly generate robot actions. However, unlike vision and language modalities, action data is absent from existing Internet datasets, demanding a new paradigm for data collection.
+Recent research mainly rely on real-world data collection through teleoperation, exemplified by community-driven efforts like Open-X-Embodiment (OXE) [9] and DROID [10] datasets. However, gathering real-world data at a large scale is both labor-intensive and costly, requiring a large number of robots and human operators, as well as diverse physical setups. In contrast, synthetic data offers a more accessible and cost-effective alternative – yet its potential remains largely underestimated.
+To this end, we systematically explore the potential of synthetic data for training VLA models. As a first step in this direction, we focus on grasping, a fundamental robotic manipulation skill. We first curate a billion-frame grasping dataset, SynGrasp-1B, based on advanced ray-tracing rendering [11] and physics simulation [12], marking the first dataset of this scale globally. This dataset incorporates 10,000 unique objects from 240 categories and encompasses extensive domain randomization, ensuring broad coverage of geometric and visual variations.
+To efficiently learn from this dataset, we propose GraspVLA, an end-to-end network that integrates autoregressive perception tasks and flow-matching-based action generation into a unified Chainof-Thought (CoT) process, named Progressive Action Generation (PAG). PAG treats perception tasks, i.e., visual grounding and grasping pose prediction, as intermediate steps in action generation, forming a CoT process that causally infers actions. This design enables joint training on synthetic and Internet data in a unified framework, where Internet data is used to train the perception tasks (partial CoT process), and synthetic data is used to train the entire CoT pipeline. Synthetic data provides detailed geometric information about objects for object interactions, while Internet data offers rich semantic knowledge about objects. By leveraging these complementary sources, PAG reduces sim-to-real gaps and facilitates the transfer of learned robotic actions to semantically diverse Internet-covered objects, thereby enabling open-vocabulary grasping.
+Empowered by our curated billion-scale synthetic grasping dataset and the proposed PAG mechanism, GraspVLA achieves direct sim-to-real generalization and demonstrates impressive zero-shot performance. To the best of our knowledge, this is the first work to reveal the significant potential of synthetic data in training VLA models. Extensive experiments conducted in both real-world settings and the LIBERO [13] simulation benchmark demonstrate the model’s robustness across diverse variations. In addition, GraspVLA shows excellent generalization to long-tail object categories absent from synthetic action data, such as chargers, towels, and swimming goggles. Compared to AnyGrasp [14], the state-of-the-art in traditional grasping detection algorithms, GraspVLA supports natural language instructions and delivers a robust closed-loop grasping policy. It achieves comparable performance on common objects while significantly outperforming AnyGrasp on transparent objects. Moreover, GraspVLA demonstrates strong few-shot adaptability to user preferences in specified application scenarios that extend beyond standard grasping behaviors, such as avoiding contact with the interior of drinking cups to maintain cleanliness and sequentially grasping bottles in densely packed environments.
+In summary, our contributions are as follows: a) we introduce a novel pretraining paradigm that relies entirely on synthetic action data, significantly reducing the data acquisition burden, b) we curate a billion-frame robotic grasping dataset, SynGrasp-1B, the first dataset of this scale globally, c) we propose Progressive Action Generation to co-train synthetic actions with Internet data,
+2
+
+
+extending GraspVLA’s skills to novel object categories, and d) extensive experiments demonstrate GraspVLA’s foundation capability, including strong zero-shot generalization and efficient few-shot adaptability in real-world.
+2 Related Work
+Vision-Language-Action (VLA) Models. Recently, a number of works[15, 16, 17, 18, 19, 20, 21, 22, 23] explored training an end-to-end VLA by learning from large-scale demonstration data. RT-2 [5] and OpenVLA [6] propose to leverage pre-trained vision-language models (VLMs) [24, 25] to exploit the rich knowledge from Internet dataset. Following the success of pre-trained VLMs, several works [26, 7, 27, 8, 28, 29] explore leveraging additional action expert to generate multi-modal actions with high fidelity. Others [30, 31, 32, 33, 34, 35] adopt generative pre-training on Internetscale video data to learn from human videos. However, limited by the scale of real-world robotic data, existing VLA models mainly rely on in-domain post-training for deployment. Concurrent work, π0.5 [36], proposes improving generalization by leveraging multimodal web data and crossembodiment data, enabling direct out-of-the-box deployment. While our work also targets zeroshot deployment, we take a different approach—exclusively pre-training on large-scale synthetic data—and demonstrate strong zero-shot generalization.
+Synthetic Data. With the fast development of GPU-accelerated simulation and photo-realistic rendering, synthetic data generation has become a popular approach to train robotic models. Previous works [37, 38, 39] pioneered the use of simulated data with domain randomization to train open-loop grasping models. Recently, several works [40, 41, 42] explore automatically augmenting human demonstrations in simulation by randomizing object configurations and leveraging motion planning to generate realistic robot trajectories. Another line of work [43, 44, 45, 46] synthesizes data from a few human demonstrations utilizing text-to-image generation models and multi-view stereoscopic rendering, without requiring any physical simulation. While these methods [47] still rely on human demonstrations to generate augmented data, our work explores direct sim-to-real transfer by leveraging large-scale synthetic data together with pre-trained vision and language backbones.
+Grasping. Grasping is an essential skill [48] for embodied agents and has been actively studied in the past decade. Some works tackle this problem through open-loop grasp detection [49, 14, 50] and then control the end effector using a motion planner. Such modular-based systems usually suffer from poor depth perception [51] and lack of failure recovery behavior [52, 53]. Another line of research explores vision-based grasping systems in an end-to-end and closed-loop manner, either through reinforcement learning [54] or imitation learning [55]. With the advent of vision-language foundation models [1, 56, 57], several works aim to generalize grasping to open-vocabulary objects [58, 59, 60, 61, 62] by building a modular system that combines a grasp detection model with a VLM. While these methods achieve impressive results in standard grasping, they face challenges in adapting to specialized tasks, such as grasping with specific constraints.
+3 SynGrasp-1B Dataset Generation
+Object Assets and Layout Generation Grasp Synthesis and Trajectory Generation Visual Randomization and Rendering
+Randomize
+Randomize
+Lift the bowl
+Randomize Grasping Pose and instructions
+1
+2
+3
+Randomize Materials Randomize Lighting
+Randomize Backgrounds
+Randomize Camera Views
+Render
+Render
+Pick up the bowl
+Grasp the blowl
+Figure 2: Data generation pipeline: We first curated over 10,680 object meshes from Objaverse [63] that are suitable for tabletop grasping and randomly selected and placed these objects on the table (left). Next, we used CuRobo to plan grasping trajectories with randomized grasp poses and instructions (middle). Finally, we applied domain randomization to materials (table and robot), lighting, camera views, and backgrounds to simulate and render the trajectories (right).
+3
+
+
+Training a generalizable foundation model requires a large-scale dataset encompassing diverse objects and environmental conditions. Instead of relying on costly, slow, and limited real-world human data collection, we propose training entirely on synthetic data – which offers greater diversity at a fraction of the time and expense. We now detail the core components of our synthetic data generation pipeline: layout generation, trajectory generation, and rendering.
+Object Assets and Layout Generation. We utilize the LVIS subset of the Objaverse dataset [63] and carefully filter out unsuitable categories, such as weapons, resulting in a total of 240 categories and 10,680 instances. We randomly scale these objects and drop them in various poses onto a table, generating diverse and physically plausible scenes. More details can be found in the supplementary.
+Grasp Synthesis and Trajectory Generation. Given initial layouts, we utilize advanced modular system to establish an expert policy for generating high-quality trajectories for grasping and lifting target objects. For each object instance, we leverage grasp synthesis algorithm [64] to generate stable antipodal grasps. We then use motion planning algorithms CuRobo [65] to plan collisionfree trajectories to reach the open-loop grasp pose and lift the object. We validate all candidate trajectories in the MuJoCo physics simulator [12] to ensure successful lifting of the object.
+Visual Randomization and Rendering. Given diverse layouts and corresponding trajectories, we render high-quality RGB images with randomized lighting, backgrounds, and camera settings using Isaac Sim [66], which offers efficient photo-realistic ray-traced rendering. We employ various light sources with extensive randomization, including point, directional, and dome lights. Images are rendered from two different viewpoints to provide a comprehensive view of the scene, with randomized extrinsics around predefined centers. More details are provided in the supplementary material.
+We further highlight two major considerations in the design of our data generation pipeline:
+Efficient Data Generation. We develop three key strategies to improve the efficiency. High-quality meshes are often large, leading to lengthy loading times and significant memory usage. We implement a caching mechanism to avoid redundant loading while ensuring data diversity. Second, we implement asynchronous data writing, allowing images and labels to be saved in parallel, thereby improving overall efficiency in data generation. Finally, we employ parallel physics simulation and rendering to further improve efficiency. Please refer to the supplementary for more details.
+Tailoring Data for Imitation Learning. To ease the difficulty of imitation learning, we introduce two improvements. First, while open-loop grasping [14] employs a two-step process (pregrasp positioning followed by grasp execution) to avoid collision, this segmented approach creates pauses. Imitation policies trained on such data often exhibit hesitation [6, 67]. Instead, we implement singlestep motion planning, prioritizing trajectory smoothness over planning success rates. Second, we introduce randomized initial robot poses to improve workspace exploration and observation diversity in expert demonstrations, enhancing model robustness [68].
+With this pipeline, we generate our billion-frame dataset, SynGrasp-1B, using 160 NVIDIA 4090 GPUs for 10 days. We provide data diversity analysis in the supplementary.
+4 Model
+Overall Architecture. GraspVLA integrates a Vision-Language Model (VLM) with an action expert [7], connected through a Progressive Action Generation (PAG) mechanism, as illustrated in Figure 3. The VLM takes observation images and a text instruction for vision-language joint perception. It comprises a trainable large language model (InternLM2 1.8B [69]), a vision encoder that fuses features from frozen DINO-v2 [70] and SigLIP [71] inspired by OpenVLA [6], and a trainable projector from the vision space to the language space. We use a conditional flow matching action expert [72] for fine-grained end-effector action generation. We further introduce PAG to efficiently transfer knowledge learned from Internet grounding dataset to grasping skills.
+Progressive Action Generation. While GraspVLA learns generalizable grasping skills from our SynGrasp-1B dataset, it is constrained by the set of categories present in the synthetic dataset. To scale the grasping policy to novel categories, a straight-forward approach is to co-train with Inter
+4
+
+
+Bounding Boxes Grasping Pose
+... ... !!"#
+!! !!"$ !!"%
+Ac3on Chunk
+Progressive Ac,on Genera,on
+Ac#on Expert
+Flow Matching
+Web Data pick up charger
+Synthe#c Data
+pick up box
+Bounding Boxes
+Grasping Pose
+Ac3on Chunk Web Data √
+Synthetic Data √ √ √
+sampling
+!
+!
+#
+#
+$
+$
+Vision-Language Model
+Token Predic7on
+Figure 3: GraspVLA consists of an autoregressive vision-language backbone and a flow-matching based action expert. It exploits the synergy between Internet grounding data and synthetic action data with a Progressive Action Generation mechanism: the model first predicts 2D bounding boxes of the target object for both synthetic data and web data, and additionally generates grasp pose and chunked actions for synthetic data.
+net grounding dataset as separate tasks, and rely on the model to implicitly generalize to object categories learned from the grounding dataset.
+Alternatively, we formulate image grounding and grasp pose prediction as intermediate steps to generate action. Specifically, the VLM is trained to generate 2D bounding boxes for both Internet grounding dataset and synthetic action dataset in a unified format. Then, for the synthetic dataset, the VLM further predicts the target grasp pose in the robot’s base frame. Finally, the action expert generates action chunk conditioned on the VLM’s key-value cache of both input and intermediate reasoning tokens. To facilitate accurate 3D sensing, the proprioceptions from the latest two timesteps are tokenized and inserted before generating grasp pose. To align the Internet dataset with the dual-camera setup of SynGrasp-1B, input images are duplicated to match the number of views and independently augmented with random resizing, cropping, horizontal flipping, and color jittering. Both datasets share the same text prompt template, generating bounding box tokens first. This unified training strategy exploits the synergy between the Internet grounding and synthetic datasets, and resembles the Chain-of-Thought reasoning mechanism widely studied and proven as an effective measure to handle highly complex tasks in large language models [73].
+Joint Training of VLM and action expert. In each batch, we randomly sample from the Internet dataset (GRIT [74]) and the synthetic action dataset. The former is used solely to supervise the VLM’s bounding box prediction in an auto-regressive manner. The latter supervises bounding box, grasp pose, and flow-matching-based action prediction. The loss of VLM is formally defined as:
+LS2 = −
+Nbbox X
+n=1
+log Pθ(ybbox,n | x, ybbox,<n) − 1synthetic ·
+Ngrasp X
+n=1
+log Pθ(ygrasp,n | x, ybbox, ygrasp,<n),
+where Nbbox and Ngrasp are the lengths of the bounding box and grasp pose token sequences respectively, ybbox,n and ygrasp,n are tokens at position n in their respective sequences, and x is the input images and text. The action expert is supervised with flow matching loss on chunked end-effector delta actions: LS1 = ∥vt(At, x, ybbox, ygrasp) − ut(At | A0)∥2,
+where t ∈ [0, 1] is the flow matching timestep, At is the noised action trunk at t, vt(·) is the model predicted flow matching vector field, ut(At | A0) is the ground-truth vector field. We empirically found a simple sum of LS2 and LS1 for the overall loss yields good performance.
+5 Experiments
+We evaluate GraspVLA to answer the following questions: (1) How does GraspVLA compare with existing work under various generalization factors? (2) How does GraspVLA scale with the amount of data? (3) How much do our design choices contribute to GraspVLA’s performance? (4) How well does GraspVLA support few-shot post-training for specialized preferences?
+5
+
+
+5.1 Zero-Shot Comparison with VLAs in Real World
+Synthetic Categories Web Categories
+basic↑ light↑ b.g.↑ dis.↑ height↑ SPL↑ basic↑ light↑ b.g.↑ dis.↑ height↑ SPL↑
+Diffusion Policy [75] 30.0 16.6 16.6 13.3 13.3 12.3 - - - - - Octo [26] 16.6 3.3 0.0 0.0 3.3 3.2 0.0 3.3 0.0 0.0 0.0 0.4 OpenVLA [6] 20.0 13.3 16.6 0.0 13.3 8.8 3.3 6.6 13.3 0.0 6.6 4.1 π0(w/ π0 pre-train)[7] 66.6 63.3 60.0 60.0 56.6 42.3 33.3 36.6 30.0 26.6 26.6 17.8 π0(w/o π0 pre-train)[7] 80.0 76.6 80.0 86.6 76.6 51.8 40.0 40.0 36.6 36.6 33.3 36.9 Ours 93.3 96.6 93.3 93.3 90.0 87.2 93.3 90.0 93.3 86.6 86.6 84.7
+Table 1: Zero-shot comparisons in real-world. We compare our method against state-of-the-art imitation learning specialists and large VLA models. All models are fine-tuned on SynGrasp-1B dataset. Our approach achieves the highest grasping success rate on items from both synthetic and web categories using short trajectories. Detailed description of setups is provided in Section 5.1.
+Task Definition. To evaluate the effectiveness of PAG, we use two groups of objects: synthetic categories and web categories. We define synthetic categories as those present in our SynGrasp-1B dataset, while web categories refer to those exclusively present in Internet grounding dataset.
+b) Synthetic categories
+c) Web categories
+0.2m
+a) Robot setup
+Franka
+Side camera
+Front camera
+0.4m 0.5m
+d) Test sets
+Figure 4: We show our real-world setup in (a), objects used in the experiments in (b, c), and 5 test sets corresponding to basic, light, background, distractor, and height settings in (d).
+For each group of objects, we design 5 test sets: basic, lighting, background, distractors, and height. Each test set contains 15 objects from distinct categories randomly sampled from each group, with 2 trials per object. In other words, we test each method for 15 × 2 × 5 × 2 = 300 trials in total. We use a disco light to generate different lighting conditions. For background generalization, three distinct tablecloths are selected and interchanged. For distractor generalization, we randomly place 5 additional objects on the table as distractors. For height generalization, we increase the height of the workspace surface by 10 cm. We utilize a Franka Panda arm and employ two Intel RealSense cameras as front and side cameras. The workspace is confined to a 40 cm × 50 cm x 20 cm area in front of the robot. The initial robot and object states are fixed within each trial to ensure fair comparison.
+Metrics. The success rate is defined as the percentage of trials in which the model successfully grasps the target object within 3 attempts. For each object group, we also report the average Success weighted by Path Length (SPL) [76], a widely used metric that weights success rate with motion efficiency by penalizing unnecessarily long paths. It is computed as: 1
+N
+PN
+i=1 Si li
+max(pi,li) , where
+Si is a binary indicator of success (1 if successful), li is the shortest path length achieved by any method in the trial, pi is the path length taken by the model, and N is the total number of trials.
+Baselines. We compare with multiple baselines including both VLA generalists and imitation learning specialists. For generalists, we use π0 [7], OpenVLA [6], and Octo [26], three transformer-based policies pre-trained on large-scale real-world datasets. To ensure fair comparison, we fine-tune all three models on our SynGrasp-1B dataset. Additionally, to assess the effectiveness of pre-training on SynGrasp-1B, we report results of direct fine-tuning π0 from its VLM weights [77], without its cross-embodiment robotic pre-training. For specialists, we use Diffusion Policy [75], a strong diffusion baseline for visual-conditioned imitation learning. As it lacks language conditioning, we train and test it using only the elephant category. Additional details are provided in the supplementary.
+Comparisons. As illustrated in Table 1, GraspVLA achieves around 90% on all test sets and significantly outperforms all baselines, demonstrating strong zero-shot generalizability. Notably, GraspVLA achieves comparable results in both synthetic and web categories, underscoring the effectiveness of PAG. Additionally, the SPL metric reveals that GraspVLA grasps objects with shorter path lengths compared to π0 baselines which often exhibit hesitation. Interestingly, the π0 baseline without cross-embodiment pre-training performs better than its pre-trained counterpart, suggesting
+6
+
+
+that cross-embodiment pre-training may not be optimal for this specific grasping task on the given robotic arm. We provide failure analysis in the supplementary.
+5.2 Zero-Shot Comparison with VLAs in LIBERO Benchmark
+Long Goal Object
+OpenVLA (fine-tuned) 33.7 56.6 65.4 π0 (fine-tuned) 62.7 79.4 93.8 Ours (zero-shot) 82.0 91.2 94.1
+Table 2: Comparisons with baselines in LIBERO. The zero-shot performance of GraspVLA surpasses the fine-tuned performance of strong baselines π0 and OpenVLA.
+Setup. LIBERO [13] is a widely used simulation benchmark for robotic manipulation, encompassing diverse tasks and object categories. We evaluate on three LIBERO suites (Long, Goal, Object), excluding Spatial, as its focus on spatial reasoning falls outside our scope. To concentrate on grasping capabilities, we omit non-prehensile tasks (e.g., ‘turn on the stove’) and reformulate task captions as ‘pick up {object}’, selecting 7-10 tasks per suite. In line with standard evaluation protocols, each task is rigorously tested with 50 randomized initial configurations, resulting in 350-500 trials per suite. More details are provided in the supplementary.
+Comparisons. As shown in Table 2, GraspVLA demonstrates satisfactory performance when zeroshot evaluated on LIBERO. It surpasses π0 and OpenVLA fine-tuned on the LIBERO dataset, demonstrating strong generalizability. We also observe that the format of task captions significantly affects the performance of fine-tuned models and provide detailed results in the supplementary.
+5.3 Zero-Shot Comparison with AnyGrasp in Real World
+Language-Conditioned Arbitary Grasping Speed
+overall grasp common transparent
+AnyGrasp 91.6 96.6 100.0 10.0 37 Hz Ours 93.3 93.3 93.3 86.6 5 Hz
+Table 3: Comparison with AnyGrasp. GraspVLA performs consistently well in both language-guided and arbitrary grasping tasks. In contrast, AnyGrasp is faster and excels at grasping common objects but struggles with transparent objects.
+Setup. We benchmark GraspVLA against AnyGrasp [14], a state-of-the-art grasp detection model specialized in grasping. For language-conditioned grasping, we integrate AnyGrasp with Grounding DINO [78], a popular open-vocabulary object detector, to filter grasp candidates. We use the same two basic test sets (Section 5.1), with metrics including overall success rate (task completion) and grasping success rate (grasping any object). To isolate grasping performance, we design two additional test sets (30 trials each): one with common household objects and another with transparent objects, where the robot can grasp any object in the scene.
+Comparisons. In the language-conditioned test set, both model achieve similar performance, with GraspVLA slightly outperforming AnyGrasp in grounding ability, due to its comprehensive multiview observation. In arbitrary object grasping, while AnyGrasp achieves a 100% success rate in grasping common objects, it struggles with transparent objects due to inaccurate depth sensing and incomplete point cloud data. In contrast, GraspVLA maintains consistent performance across both test sets, highlighting its robustness to material variations. However, GraspVLA’s inference speed is significantly slower than AnyGrasp’s, a limitation tied to its large vision-language backbone.
+5.4 Scaling Law
+Web
+Synthetic
+Number of training frames
+Success Rate
+Figure 5: The performance scales with the number of training frames, especially for web categories.
+Figure 5 shows the scaling curve regarding the number of training frames in real world. We observe that the performance improves steadily with the number of training frames and the performance on web categories scales slower than that of synthetic categories, indicating that more training frames are needed for good generalization on web categories. For scaling law regarding the number of training categories and the number of instances per category, please refer to the supplementary.
+5.5 Efficient Post-Training
+A defining characteristic of foundation models is their ability to adapt to new tasks. To this end, we design three downstream tasks: i) Task 1 – grasping rare industrial components, ii) Task 2 – grasping a mug without touching its interior to maintain
+7
+
+
+cleanliness, and iii) Task 3 – sequential grasping in a densely packed environment. These tasks rigorously benchmark the model’s adaptability capability to three critical challenges: (i) generalizing to new vocabularies, (ii) executing task-specific grasp specifications, and (iii) grasping in order. We collect 100 demos for Tasks 1–2 and 10 per bottle for Task 3. We conduct 10 trials per task and report the overall success rate (task completion) and the grasping success rate (grasping any object).
+1234
+5 67 8
+c) Post Training Task 3
+b) Post Training Task 2
+Pick up the mug without touching its interior.
+a) Post-training Task 1
+Battery cable
+Wiring base Window lift switch
+Motor Loudspeaker
+Figure 6: Real-world post-training. We experimented with three different post-training tasks to showcase that our model can quickly learn to grasp new items in (a), new grasping patterns in (b), and new grasping behavior in (c).
+Training Data Task 1 Task 2 Task 3
+BBox traj. overall grasp overall grasp overall grasp
+OpenVLA - - 0 0 0 20 0 0 π0 - - 10 20 0 30 0 0 Ours - - 40 90 0 80 0 20 DP - ✓ - - 20 60 10 30 OpenVLA - ✓ 0 0 20 30 0 20 π0 - ✓ 60 80 60 70 50 60 Ours ✓ - 90 100 - - - Ours(scratch) ✓ ✓ 10 30 10 30 0 20 Ours ✓ ✓ 90 100 80 90 90 90
+Table 4: Efficient post-training. GraspVLA shows superior adaptability to novel tasks, surpassing the model without pretraining and all baselines.
+As shown in Table 4, GraspVLA achieves a 90% success rate with only bounding box annotations in Task 1, surpassing baselines trained on full action data. This suggests that extending GraspVLA to new objects does not necessitate action annotations, thereby greatly reducing data collection effort. As shown by the last two rows, training from scratch yields lower performance, underscoring the value of our synthetic pre-training. Notably, in Task 3’s dense sequential grasping, GraspVLA learns to avoid collisions with surrounding objects effectively.
+5.6 Effectiveness of Design Choices
+Synthetic Web
+SR SPL SR SPL
+vanilla 66.6 39.3 53.3 27.7 + PAG-2D 80.0 59.2 76.7 48.9 + PAG-3D 93.3 90.2 93.3 91.7
+Table 5: We give a detailed ablation study of our models. With all the design choices enabled the performance boosts significantly.
+As shown in Table 5, we evaluate the effectiveness of our key design choices using both success rate and Success weighted by Path Length (SPL) metrics on the basic test set described in Sec. 5.1. The vanilla baseline, which employs co-training with Internet grounding data but excludes PAG, serves as our starting point. Introducing 2D bounding boxes as intermediate action steps (PAG-2D) yields significant improvements for web categories. Further enhancement comes with grasp pose prediction (PAG-3D), which substantially reduces hesitation behavior and improves grasping accuracy. This leads to fewer attempts and shorter trajectories, as reflected in the higher SPL scores. Together, these results demonstrate the effectiveness of our PAG approach.
+6 Conclusion
+In this work, we investigated building a generalizable grasping VLA model with large-scale synthetic data. First, we curated a billion-scale grasping dataset in simulation, featuring extensive randomization and photorealistic rendering. Second, we carefully designed our model to effectively learn from synthetic action data and action-free Internet grounding data, achieving strong generalizability for grasping novel-category objects in unseen environments. Extensive ablation studies and comparisons demonstrate that our method achieves state-of-the-art performance in table-top grasping. Furthermore, we observed that our model scales effectively with the amount of synthetic training data. Finally, we showcase that GraspVLA can acquire new grasping behaviors through few-shot post-training, highlighting its adaptability and potential for real-world applications.
+8
+
+
+7 Limitations and Future Work
+Currently, our data generation and evaluation are conducted exclusively on the Franka Panda arm with front and side views. However, our simulation pipeline is inherently scalable and can be readily adapted to other robots and camera configurations. We leave this engineering effort as future work.
+GraspVLA struggles with ambiguous instructions such as “pick up food” and “pick up the leftmost object”. Addressing these challenges may require scaling vision-language pretraining and exploring architectural innovations to enhance semantic reasoning.
+Additionally, GraspVLA treats deformable objects (e.g., towels) as rigid bodies, neglecting their physical properties. Future work will integrate advanced simulation techniques, such as deformable object and fluid manipulation [79], and contact-rich assembly [80], to broaden its applicability. The pretrained model also faces challenges in densely cluttered scenes and non-tabletop environments. We will incorporate data from more complex scenarios in the future.
+While current model focuses on grasping, the model design is not tailored to this specific task. We plan to extend the data generation pipeline to support other manipulation tasks, such as pick-andplace and pushing. Beyond the current modular-based expert policy used in data generation, we will explore reinforcement learning for more complex tasks like non-prehensile manipulation.
+Although our PAG mechanism enables open-vocabulary grasping, it introduces additional latency. We currently achieve around 200ms latency on NVIDIA L40s utilizing Torch Compile [81]. While this is sufficient for static scenes, it may not be enough for dynamic environments, e.g., fast moving objects. Distillation and quantization techniques can be further explored.
+9
+
+
+References
+[1] H. Touvron, T. Lavril, G. Izacard, X. Martinet, M.-A. Lachaux, T. Lacroix, B. Rozie`re, N. Goyal, E. Hambro, F. Azhar, A. Rodriguez, A. Joulin, E. Grave, and G. Lample. Llama: Open and efficient foundation language models, 2023. URL https://arxiv.org/abs/ 2302.13971.
+[2] A. Kirillov, E. Mintun, N. Ravi, H. Mao, C. Rolland, L. Gustafson, T. Xiao, S. Whitehead, A. C. Berg, W.-Y. Lo, P. Dolla ́r, and R. Girshick. Segment anything. arXiv:2304.02643, 2023.
+[3] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal, G. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever. Learning transferable visual models from natural language supervision, 2021. URL https://arxiv.org/abs/2103.00020.
+[4] OpenAI. Chatgpt: Jan 17 version. https://openai.com/chatgpt, 2023. [Large language model].
+[5] A. Brohan, N. Brown, J. Carbajal, Y. Chebotar, X. Chen, K. Choromanski, T. Ding, D. Driess, A. Dubey, C. Finn, et al. Rt-2: Vision-language-action models transfer web knowledge to robotic control. arXiv preprint arXiv:2307.15818, 2023.
+[6] M. J. Kim, K. Pertsch, S. Karamcheti, T. Xiao, A. Balakrishna, S. Nair, R. Rafailov, E. Foster, G. Lam, P. Sanketi, et al. Openvla: An open-source vision-language-action model. arXiv preprint arXiv:2406.09246, 2024.
+[7] K. Black, N. Brown, D. Driess, A. Esmail, M. Equi, C. Finn, N. Fusai, L. Groom, K. Hausman, B. Ichter, et al. pi0: A vision-language-action flow model for general robot control. arXiv preprint arXiv:2410.24164, 2024.
+[8] NVIDIA, :, J. Bjorck, F. Castan ̃eda, N. Cherniadev, X. Da, R. Ding, L. J. Fan, Y. Fang, D. Fox, F. Hu, S. Huang, J. Jang, Z. Jiang, J. Kautz, K. Kundalia, L. Lao, Z. Li, Z. Lin, K. Lin, G. Liu, E. Llontop, L. Magne, A. Mandlekar, A. Narayan, S. Nasiriany, S. Reed, Y. L. Tan, G. Wang, Z. Wang, J. Wang, Q. Wang, J. Xiang, Y. Xie, Y. Xu, Z. Xu, S. Ye, Z. Yu, A. Zhang, H. Zhang, Y. Zhao, R. Zheng, and Y. Zhu. Gr00t n1: An open foundation model for generalist humanoid robots, 2025. URL https://arxiv.org/abs/2503.14734.
+[9] A. O’Neill, A. Rehman, A. Gupta, A. Maddukuri, A. Gupta, A. Padalkar, A. Lee, A. Pooley, A. Gupta, A. Mandlekar, et al. Open x-embodiment: Robotic learning datasets and rt-x models. arXiv preprint arXiv:2310.08864, 2023.
+[10] A. Khazatsky, K. Pertsch, S. Nair, A. Balakrishna, S. Dasari, S. Karamcheti, S. Nasiriany, M. K. Srirama, L. Y. Chen, K. Ellis, et al. Droid: A large-scale in-the-wild robot manipulation dataset. arXiv preprint arXiv:2403.12945, 2024.
+[11] J. Liang, V. Makoviychuk, A. Handa, N. Chentanez, M. Macklin, and D. Fox. Gpu-accelerated robotic simulation for distributed reinforcement learning, 2018.
+[12] E. Todorov, T. Erez, and Y. Tassa. Mujoco: A physics engine for model-based control. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, pages 50265033, 2012. doi:10.1109/IROS.2012.6386109.
+[13] B. Liu, Y. Zhu, C. Gao, Y. Feng, Q. Liu, Y. Zhu, and P. Stone. Libero: Benchmarking knowledge transfer for lifelong robot learning. Advances in Neural Information Processing Systems, 36, 2024.
+[14] H.-S. Fang, C. Wang, H. Fang, M. Gou, J. Liu, H. Yan, W. Liu, Y. Xie, and C. Lu. Anygrasp: Robust and efficient grasp perception in spatial and temporal domains. IEEE Transactions on Robotics, 39(5):3929–3945, 2023.
+10
+
+
+[15] A. Brohan, N. Brown, J. Carbajal, Y. Chebotar, J. Dabis, C. Finn, K. Gopalakrishnan, K. Hausman, A. Herzog, J. Hsu, et al. Rt-1: Robotics transformer for real-world control at scale. arXiv preprint arXiv:2212.06817, 2022.
+[16] H. Bharadhwaj, J. Vakil, M. Sharma, A. Gupta, S. Tulsiani, and V. Kumar. Roboagent: Generalization and efficiency in robot manipulation via semantic augmentations and action chunking, 2023.
+[17] L. Wang, X. Chen, J. Zhao, and K. He. Scaling proprioceptive-visual learning with heterogeneous pre-trained transformers. arXiv preprint arXiv:2409.20537, 2024.
+[18] M. Zawalski, W. Chen, K. Pertsch, O. Mees, C. Finn, and S. Levine. Robotic control via embodied chain-of-thought reasoning. arXiv preprint arXiv:2407.08693, 2024.
+[19] X. Li, M. Zhang, Y. Geng, H. Geng, Y. Long, Y. Shen, R. Zhang, J. Liu, and H. Dong. Manipllm: Embodied multimodal large language model for object-centric robotic manipulation. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 18061–18070, 2024.
+[20] X. Li, C. Mata, J. Park, K. Kahatapitiya, Y. S. Jang, J. Shang, K. Ranasinghe, R. Burgert, M. Cai, Y. J. Lee, et al. Llara: Supercharging robot learning data for vision-language policy. arXiv preprint arXiv:2406.20095, 2024.
+[21] A. Goyal, V. Blukis, J. Xu, Y. Guo, Y.-W. Chao, and D. Fox. Rvt-2: Learning precise manipulation from few demonstrations. arXiv preprint arXiv:2406.08545, 2024.
+[22] H. Zhen, X. Qiu, P. Chen, J. Yang, X. Yan, Y. Du, Y. Hong, and C. Gan. 3d-vla: A 3d visionlanguage-action generative world model. arXiv preprint arXiv:2403.09631, 2024.
+[23] J. Zhang, K. Wang, R. Xu, G. Zhou, Y. Hong, X. Fang, Q. Wu, Z. Zhang, and H. Wang. Navid: Video-based vlm plans the next step for vision-and-language navigation. arXiv preprint arXiv:2402.15852, 2024.
+[24] X. Chen, J. Djolonga, P. Padlewski, B. Mustafa, S. Changpinyo, J. Wu, C. R. Ruiz, S. Goodman, X. Wang, Y. Tay, et al. Pali-x: On scaling up a multilingual vision and language model. arXiv preprint arXiv:2305.18565, 2023.
+[25] D. Driess, F. Xia, M. S. Sajjadi, C. Lynch, A. Chowdhery, B. Ichter, A. Wahid, J. Tompson, Q. Vuong, T. Yu, et al. Palm-e: An embodied multimodal language model. arXiv preprint arXiv:2303.03378, 2023.
+[26] O. M. Team, D. Ghosh, H. Walke, K. Pertsch, K. Black, O. Mees, S. Dasari, J. Hejna, T. Kreiman, C. Xu, et al. Octo: An open-source generalist robot policy. arXiv preprint arXiv:2405.12213, 2024.
+[27] Q. Li, Y. Liang, Z. Wang, L. Luo, X. Chen, M. Liao, F. Wei, Y. Deng, S. Xu, Y. Zhang, et al. Cogact: A foundational vision-language-action model for synergizing cognition and action in robotic manipulation. arXiv preprint arXiv:2411.19650, 2024.
+[28] J. Wen, Y. Zhu, J. Li, M. Zhu, K. Wu, Z. Xu, N. Liu, R. Cheng, C. Shen, Y. Peng, F. Feng, and J. Tang. Tinyvla: Towards fast, data-efficient vision-language-action models for robotic manipulation, 2024. URL https://arxiv.org/abs/2409.12514.
+[29] S. Liu, L. Wu, B. Li, H. Tan, H. Chen, Z. Wang, K. Xu, H. Su, and J. Zhu. Rdt-1b: a diffusion foundation model for bimanual manipulation. arXiv preprint arXiv:2410.07864, 2024.
+[30] C.-L. Cheang, G. Chen, Y. Jing, T. Kong, H. Li, Y. Li, Y. Liu, H. Wu, J. Xu, Y. Yang, et al. Gr-2: A generative video-language-action model with web-scale knowledge for robot manipulation. arXiv preprint arXiv:2410.06158, 2024.
+11
+
+
+[31] S. Ye, J. Jang, B. Jeon, S. Joo, J. Yang, B. Peng, A. Mandlekar, R. Tan, Y.-W. Chao, B. Y. Lin, et al. Latent action pretraining from videos. arXiv preprint arXiv:2410.11758, 2024.
+[32] H. Bharadhwaj, D. Dwibedi, A. Gupta, S. Tulsiani, C. Doersch, T. Xiao, D. Shah, F. Xia, D. Sadigh, and S. Kirmani. Gen2act: Human video generation in novel scenarios enables generalizable robot manipulation. arXiv preprint arXiv:2409.16283, 2024.
+[33] J. Yang, B. Liu, J. Fu, B. Pan, G. Wu, and L. Wang. Spatiotemporal predictive pre-training for robotic motor control. arXiv preprint arXiv:2403.05304, 2024.
+[34] Q. Zhao, Y. Lu, M. J. Kim, Z. Fu, Z. Zhang, Y. Wu, Z. Li, Q. Ma, S. Han, C. Finn, et al. Cot-vla: Visual chain-of-thought reasoning for vision-language-action models. arXiv preprint arXiv:2503.22020, 2025.
+[35] Y. Tian, S. Yang, J. Zeng, P. Wang, D. Lin, H. Dong, and J. Pang. Predictive inverse dynamics models are scalable learners for robotic manipulation, 2024. URL https://arxiv.org/ abs/2412.15109.
+[36] P. Intelligence, K. Black, N. Brown, J. Darpinian, K. Dhabalia, D. Driess, A. Esmail, M. Equi, C. Finn, N. Fusai, M. Y. Galliker, D. Ghosh, L. Groom, K. Hausman, B. Ichter, S. Jakubczak, T. Jones, L. Ke, D. LeBlanc, S. Levine, A. Li-Bell, M. Mothukuri, S. Nair, K. Pertsch, A. Z. Ren, L. X. Shi, L. Smith, J. T. Springenberg, K. Stachowicz, J. Tanner, Q. Vuong, H. Walke, A. Walling, H. Wang, L. Yu, and U. Zhilinsky. π0.5: a vision-language-action model with open-world generalization, 2025. URL https://arxiv.org/abs/2504.16054.
+[37] K. Bousmalis, A. Irpan, P. Wohlhart, Y. Bai, M. Kelcey, M. Kalakrishnan, L. Downs, J. Ibarz, P. Pastor, K. Konolige, S. Levine, and V. Vanhoucke. Using simulation and domain adaptation to improve efficiency of deep robotic grasping, 2017. URL https://arxiv.org/abs/1709. 07857.
+[38] C. Eppner, A. Mousavian, and D. Fox. Acronym: A large-scale grasp dataset based on simulation, 2020. URL https://arxiv.org/abs/2011.09584.
+[39] J. Mahler, J. Liang, S. Niyaz, M. Laskey, R. Doan, X. Liu, J. A. Ojea, and K. Goldberg. Dexnet 2.0: Deep learning to plan robust grasps with synthetic point clouds and analytic grasp metrics, 2017. URL https://arxiv.org/abs/1703.09312.
+[40] A. Mandlekar, S. Nasiriany, B. Wen, I. Akinola, Y. Narang, L. Fan, Y. Zhu, and D. Fox. Mimicgen: A data generation system for scalable robot learning using human demonstrations, 2023. URL https://arxiv.org/abs/2310.17596.
+[41] Z. Jiang, Y. Xie, K. Lin, Z. Xu, W. Wan, A. Mandlekar, L. Fan, and Y. Zhu. Dexmimicgen: Automated data generation for bimanual dexterous manipulation via imitation learning, 2025. URL https://arxiv.org/abs/2410.24185.
+[42] C. Garrett, A. Mandlekar, B. Wen, and D. Fox. Skillmimicgen: Automated demonstration generation for efficient skill learning and deployment, 2024. URL https://arxiv.org/ abs/2410.18907.
+[43] S. Yang, W. Yu, J. Zeng, J. Lv, K. Ren, C. Lu, D. Lin, and J. Pang. Novel demonstration generation with gaussian splatting enables robust one-shot manipulation, 2025. URL https: //arxiv.org/abs/2504.13175.
+[44] Z. Xue, S. Deng, Z. Chen, Y. Wang, Z. Yuan, and H. Xu. Demogen: Synthetic demonstration generation for data-efficient visuomotor policy learning, 2025. URL https://arxiv.org/ abs/2502.16932.
+[45] Z. Chen, S. Kiami, A. Gupta, and V. Kumar. Genaug: Retargeting behaviors to unseen situations via generative augmentation, 2023. URL https://arxiv.org/abs/2302.06671.
+12
+
+
+[46] T. Yu, T. Xiao, A. Stone, J. Tompson, A. Brohan, S. Wang, J. Singh, C. Tan, D. M, J. Peralta, B. Ichter, K. Hausman, and F. Xia. Scaling robot learning with semantically imagined experience, 2023. URL https://arxiv.org/abs/2302.11550.
+[47] A. Maddukuri, Z. Jiang, L. Y. Chen, S. Nasiriany, Y. Xie, Y. Fang, W. Huang, Z. Wang, Z. Xu, N. Chernyadev, S. Reed, K. Goldberg, A. Mandlekar, L. Fan, and Y. Zhu. Sim-and-real cotraining: A simple recipe for vision-based robotic manipulation, 2025. URL https://arxiv. org/abs/2503.24361.
+[48] R. Newbury, M. Gu, L. Chumbley, A. Mousavian, C. Eppner, J. Leitner, J. Bohg, A. Morales, T. Asfour, D. Kragic, et al. Deep learning approaches to grasp synthesis: A review. IEEE Transactions on Robotics, 39(5):3994–4015, 2023.
+[49] H.-S. Fang, C. Wang, M. Gou, and C. Lu. Graspnet-1billion: A large-scale benchmark for general object grasping. In 2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), pages 11441–11450, 2020. doi:10.1109/CVPR42600.2020.01146.
+[50] A. Mousavian, C. Eppner, and D. Fox. 6-dof graspnet: Variational grasp generation for object manipulation. In Proceedings of the IEEE/CVF international conference on computer vision, pages 2901–2910, 2019.
+[51] S. Wei, H. Geng, J. Chen, C. Deng, C. Wenbo, C. Zhao, X. Fang, L. Guibas, and H. Wang. D3roma: Disparity diffusion-based depth sensing for material-agnostic robotic manipulation. In 8th Annual Conference on Robot Learning, 2024. URL https://openreview.net/ forum?id=7E3JAys1xO.
+[52] Y. Liu, A. Qualmann, Z. Yu, M. Gabriel, P. Schillinger, M. Spies, N. A. Vien, and A. Geiger. Efficient end-to-end detection of 6-dof grasps for robotic bin picking, 2024. URL https: //arxiv.org/abs/2405.06336.
+[53] H. Geng, S. Wei, C. Deng, B. Shen, H. Wang, and L. Guibas. Sage: Bridging semantic and actionable parts for generalizable articulated-object manipulation under language instructions. arXiv preprint arXiv:2312.01307, 2023.
+[54] D. Kalashnikov, A. Irpan, P. Pastor, J. Ibarz, A. Herzog, E. Jang, D. Quillen, E. Holly, M. Kalakrishnan, V. Vanhoucke, and S. Levine. Qt-opt: Scalable deep reinforcement learning for vision-based robotic manipulation, 2018. URL https://arxiv.org/abs/1806.10293.
+[55] S. Song, A. Zeng, J. Lee, and T. Funkhouser. Grasping in the wild: Learning 6dof closedloop grasping from low-cost demonstrations. IEEE Robotics and Automation Letters, 5(3): 4978–4985, 2020.
+[56] J.-B. Alayrac, J. Donahue, P. Luc, A. Miech, I. Barr, Y. Hasson, K. Lenc, A. Mensch, K. Millican, M. Reynolds, et al. Flamingo: a visual language model for few-shot learning. Advances in neural information processing systems, 35:23716–23736, 2022.
+[57] S. Karamcheti, S. Nair, A. Balakrishna, P. Liang, T. Kollar, and D. Sadigh. Prismatic vlms: Investigating the design space of visually-conditioned language models, 2024. URL https: //arxiv.org/abs/2402.07865.
+[58] A. D. Vuong, M. N. Vu, H. Le, B. Huang, B. Huynh, T. Vo, A. Kugi, and A. Nguyen. Graspanything: Large-scale grasp dataset from foundation models, 2023. URL https://arxiv. org/abs/2309.09818.
+[59] A. Stone, T. Xiao, Y. Lu, K. Gopalakrishnan, K.-H. Lee, Q. Vuong, P. Wohlhart, S. Kirmani, B. Zitkovich, F. Xia, et al. Open-world object manipulation using pre-trained vision-language models. arXiv preprint arXiv:2303.00905, 2023.
+13
+
+
+[60] C. Tang, D. Huang, W. Ge, W. Liu, and H. Zhang. Graspgpt: Leveraging semantic knowledge from a large language model for task-oriented grasping. IEEE Robotics and Automation Letters, 2023.
+[61] Y. Lu, Y. Fan, B. Deng, F. Liu, Y. Li, and S. Wang. Vl-grasp: a 6-dof interactive grasp policy for language-oriented objects in cluttered indoor scenes. In 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pages 976–983. IEEE, 2023.
+[62] Y. Ding, H. Geng, C. Xu, X. Fang, J. Zhang, S. Wei, Q. Dai, Z. Zhang, and H. Wang. Open6dor: Benchmarking open-instruction 6-dof object rearrangement and a vlm-based approach. In 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pages 7359–7366. IEEE, 2024.
+[63] M. Deitke, D. Schwenk, J. Salvador, L. Weihs, O. Michel, E. VanderBilt, L. Schmidt, K. Ehsani, A. Kembhavi, and A. Farhadi. Objaverse: A universe of annotated 3d objects. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 13142–13153, 2023.
+[64] J. Chen, Y. Ke, and H. Wang. Bodex: Scalable and efficient robotic dexterous grasp synthesis using bilevel optimization. arXiv preprint arXiv:2412.16490, 2024.
+[65] B. Sundaralingam, S. K. S. Hari, A. Fishman, C. Garrett, K. Van Wyk, V. Blukis, A. Millane, H. Oleynikova, A. Handa, F. Ramos, et al. Curobo: Parallelized collision-free robot motion generation. In 2023 IEEE International Conference on Robotics and Automation (ICRA), pages 8112–8119. IEEE, 2023.
+[66] M. Mittal, C. Yu, Q. Yu, J. Liu, N. Rudin, D. Hoeller, J. L. Yuan, R. Singh, Y. Guo, H. Mazhar, A. Mandlekar, B. Babich, G. State, M. Hutter, and A. Garg. Orbit: A unified simulation framework for interactive robot learning environments. IEEE Robotics and Automation Letters, 8(6):3740–3747, 2023. doi:10.1109/LRA.2023.3270034.
+[67] M. Dalal, A. Mandlekar, C. Garrett, A. Handa, R. Salakhutdinov, and D. Fox. Imitating task and motion planning with visuomotor transformers. arXiv preprint arXiv:2305.16309, 2023.
+[68] F. Lin, Y. Hu, P. Sheng, C. Wen, J. You, and Y. Gao. Data scaling laws in imitation learning for robotic manipulation, 2024. URL https://arxiv.org/abs/2410.18647.
+[69] Z. Cai, M. Cao, H. Chen, K. Chen, K. Chen, X. Chen, X. Chen, Z. Chen, Z. Chen, P. Chu, et al. Internlm2 technical report. arXiv preprint arXiv:2403.17297, 2024.
+[70] M. Oquab, T. Darcet, T. Moutakanni, H. Vo, M. Szafraniec, V. Khalidov, P. Fernandez, D. Haziza, F. Massa, A. El-Nouby, et al. Dinov2: Learning robust visual features without supervision. arXiv preprint arXiv:2304.07193, 2023.
+[71] X. Zhai, B. Mustafa, A. Kolesnikov, and L. Beyer. Sigmoid loss for language image pretraining. In Proceedings of the IEEE/CVF International Conference on Computer Vision, pages 11975–11986, 2023.
+[72] Y. Lipman, R. T. Chen, H. Ben-Hamu, M. Nickel, and M. Le. Flow matching for generative modeling. arXiv preprint arXiv:2210.02747, 2022.
+[73] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou, et al. Chain-ofthought prompting elicits reasoning in large language models. Advances in neural information processing systems, 35:24824–24837, 2022.
+[74] Z. Peng, W. Wang, L. Dong, Y. Hao, S. Huang, S. Ma, and F. Wei. Kosmos-2: Grounding multimodal large language models to the world. ArXiv, abs/2306.14824, 2023.
+14
+
+
+[75] C. Chi, S. Feng, Y. Du, Z. Xu, E. Cousineau, B. Burchfiel, and S. Song. Diffusion policy: Visuomotor policy learning via action diffusion. In Proceedings of Robotics: Science and Systems (RSS), 2023.
+[76] P. Anderson, A. Chang, D. S. Chaplot, A. Dosovitskiy, S. Gupta, V. Koltun, J. Kosecka, J. Malik, R. Mottaghi, M. Savva, and A. R. Zamir. On evaluation of embodied navigation agents, 2018. URL https://arxiv.org/abs/1807.06757.
+[77] L. Beyer, A. Steiner, A. S. Pinto, A. Kolesnikov, X. Wang, D. Salz, M. Neumann, I. Alabdulmohsin, M. Tschannen, E. Bugliarello, et al. Paligemma: A versatile 3b vlm for transfer. arXiv preprint arXiv:2407.07726, 2024.
+[78] S. Liu, Z. Zeng, T. Ren, F. Li, H. Zhang, J. Yang, Q. Jiang, C. Li, J. Yang, H. Su, J. Zhu, and L. Zhang. Grounding dino: Marrying dino with grounded pre-training for open-set object detection, 2024. URL https://arxiv.org/abs/2303.05499.
+[79] Y. Li, J. Wu, R. Tedrake, J. B. Tenenbaum, and A. Torralba. Learning particle dynamics for manipulating rigid bodies, deformable objects, and fluids. arXiv preprint arXiv:1810.01566, 2018.
+[80] Y. Narang, K. Storey, I. Akinola, M. Macklin, P. Reist, L. Wawrzyniak, Y. Guo, A. Moravanszky, G. State, M. Lu, et al. Factory: Fast contact for robotic assembly. arXiv preprint arXiv:2205.03532, 2022.
+[81] Introduction to torch.compile — PyTorch tutorials 2.7.0+cu126 documentation. URL https: //pytorch.org/tutorials/intermediate/torch_compile_tutorial.html.
+15
